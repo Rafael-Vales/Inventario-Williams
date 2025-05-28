@@ -1,0 +1,2001 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inventario Williams</title>
+
+  
+  <!-- <link rel="manifest" href="manifest.json"> -->
+  <meta name="theme-color" content="#ffffff">
+  <style>
+    /* Modern popup card for scanned product */
+    #productoEscaneado {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 9999;
+      padding: 20px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+      max-width: 320px;
+      width: 90%;
+      font-family: sans-serif;
+    }
+    #productoEscaneado h3 {
+      margin-top: 0;
+      font-size: 1.4em;
+      color: #c94f7c;
+    }
+    #productoEscaneado p {
+      margin: 6px 0;
+      font-size: 0.95em;
+    }
+    #productoEscaneado .acciones {
+      margin-top: 12px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    #productoEscaneado .acciones button {
+      padding: 6px 12px;
+      border: none;
+      background: #c94f7c;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+    #productoEscaneado .acciones button:hover {
+      background: #a03a60;
+    }
+    /* Colores por categoría */
+    .cat-limpieza { background-color: #d0e4ff !important; } /* azul pastel */
+    .cat-panaderia { background-color: #f7ecd0 !important; } /* beige */
+    .cat-fiambreria { background-color: #ffe0ef !important; } /* rosa */
+    .cat-alimentos { background-color: #d6f9d6 !important; } /* verde claro */
+
+    /* Tarjetas para móvil */
+    @media (max-width: 600px) {
+      .producto-card {
+        background: var(--color-form-bg);
+        border: 1px solid var(--color-form-borde);
+        border-radius: 8px;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+        margin-bottom: 14px;
+        padding: 14px 10px 10px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        animation: fadeIn 0.5s;
+      }
+      .producto-card .card-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 15px;
+      }
+      .producto-card .acciones {
+        margin-top: 7px;
+        display: flex;
+        gap: 8px;
+      }
+      .tabla-contenedor, table {
+        display: none !important;
+      }
+      #tarjetasProductos {
+        display: block;
+      }
+    }
+    /* Animación para detalles-producto en tarjetas móviles */
+    .detalles-producto {
+      transition: all 0.3s ease;
+      overflow: hidden;
+    }
+    @media (min-width: 601px) {
+      #tarjetasProductos {
+        display: none !important;
+      }
+    }
+    /* Botón flotante + */
+    #btnFlotanteAgregar {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      z-index: 9999;
+      font-size: 30px;
+      border-radius: 50%;
+      width: 58px;
+      height: 58px;
+      background: var(--color-primario);
+      color: #fff;
+      border: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.13);
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: background 0.3s;
+    }
+    #btnFlotanteAgregar:hover {
+      background: #a03a60;
+    }
+    /* Área drag & drop */
+    #dropArea {
+      border: 2px dashed var(--color-primario);
+      border-radius: 8px;
+      background: #fffafc;
+      color: var(--color-primario);
+      text-align: center;
+      padding: 28px 10px;
+      margin: 14px 0 18px 0;
+      font-size: 17px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    #dropArea.dragover {
+      background: #ffe0ef;
+      border-color: #a03a60;
+    }
+    /* Selector de temas */
+    #temaSelector {
+      margin: 0 0 20px 0;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+    .tema-btn {
+      width: 26px;
+      height: 26px;
+      border: none;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .tema-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+    .tema-btn.selected {
+      outline: 2px solid var(--color-primario);
+    }
+    /* Accesibilidad: alto contraste */
+    body, input, select, button, th, td {
+      color: #212121 !important;
+      background-clip: padding-box;
+    }
+    th, td {
+      font-weight: 600;
+    }
+    button, input[type="button"], input, select {
+      outline: none;
+      box-shadow: none;
+    }
+    button:focus, input:focus, select:focus {
+      outline: 2px solid #333 !important;
+      outline-offset: 1px;
+    }
+    /* Animaciones suaves al agregar, editar, eliminar */
+    .anim-agregar {
+      animation: fadeIn 0.5s;
+    }
+    .anim-eliminar {
+      animation: fadeOut 0.45s;
+    }
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; height: 0; margin: 0; padding: 0; }
+    }
+    /* Responsive para ocultar columnas menos importantes en móvil */
+    @media (max-width: 600px) {
+      td:not(.show-mobile),
+      th:not(.show-mobile) {
+        display: none;
+      }
+      table.expandido td,
+      table.expandido th {
+        display: table-cell !important;
+      }
+    }
+    @media (min-width: 601px) {
+      .solo-movil {
+        display: none;
+      }
+    }
+    .fade-in {
+      animation: fadeIn 0.4s ease-in-out;
+    }
+
+    /* Hover suave en filas */
+    #tablaProductos tr:hover {
+      background-color: rgba(201, 79, 124, 0.08);
+      transition: background-color 0.3s ease;
+    }
+
+    /* Animación de aparición suave */
+    .fade-in {
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Botón flotante scroll arriba: minimalista y redondo */
+    /* Estilos para el contenedor del escáner de QR/barcode */
+    #scannerContainer {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #qr-reader {
+      width: 300px;
+      max-width: 90%;
+      border: 2px solid #fff;
+      padding: 10px;
+      border-radius: 12px;
+      background: #000;
+    }
+    #irArriba {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      background: var(--color-btn-bg);
+      color: var(--color-text);
+      border: 1px solid var(--color-btn-borde);
+      border-radius: 50%;
+      padding: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      display: none;
+      z-index: 10000;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      width: 36px;
+      height: 36px;
+      text-align: center;
+      line-height: 16px;
+      transition: background-color 0.3s ease;
+    }
+    #irArriba:hover {
+      background: var(--color-btn-hover);
+    }
+
+    .highlighted {
+      animation: highlight 1.5s ease-in-out;
+    }
+
+    @keyframes highlight {
+      0% { background-color: #dff0d8; }
+      100% { background-color: inherit; }
+    }
+    :root {
+      --color-fondo: #fff5f7;
+      --color-primario: #c94f7c;
+      --color-form-bg: #ffe9ee;
+      --color-form-borde: #f3c6cf;
+      --color-btn-bg: #f9d3dc;
+      --color-btn-hover: #f4c1cd;
+      --color-btn-borde: #eab4c0;
+      --color-th-bg: #fbe4ea;
+      --color-red: #ffb3b3;
+      --color-yellow: #fff4b3;
+      --color-green: #b3ffcc;
+      --color-text: #333;
+    }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 20px;
+      background: var(--color-fondo);
+      color: var(--color-text);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: var(--color-primario);
+    }
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    /* Formulario */
+    form, .tabla-contenedor {
+      background: var(--color-form-bg);
+      padding: 18px 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      margin-bottom: 25px;
+    }
+    .form-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap; /* Agrega esta línea para que los elementos se acomoden correctamente */
+    }
+    .form-group input {
+      flex: 1;
+      padding: 6px;
+      font-size: 14px;
+      border: 1px solid var(--color-form-borde);
+      border-radius: 6px;
+      transition: all 0.3s ease;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    input[type="file"] {
+      padding: 8px 12px;
+      border: 1px solid var(--color-form-borde);
+      border-radius: 6px;
+      background-color: var(--color-form-bg);
+      font-size: 14px;
+      color: var(--color-text);
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    input[type="date"]:focus,
+    input[type="file"]:focus {
+      border-color: var(--color-primario);
+      box-shadow: 0 0 0 2px rgba(201, 79, 124, 0.2);
+      outline: none;
+    }
+    #colorPersonalizado {
+      margin-bottom: 8px;
+      margin-right: 10px;
+    }
+    button, input[type="button"] {
+      padding: 10px 18px;
+      font-size: 14px;
+      margin-top: 8px;
+      border-radius: 6px;
+      border: 1px solid var(--color-btn-borde);
+      background: var(--color-btn-bg);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    button:hover, input[type="button"]:hover {
+      background: var(--color-btn-hover);
+      transform: scale(1.03);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    /* Filtros y controles */
+    .section {
+      margin-bottom: 25px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+    }
+    .section label {
+      font-size: 15px;
+    }
+    select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--color-form-borde);
+      background-color: var(--color-form-bg);
+      font-size: 14px;
+      color: var(--color-text);
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg fill='%23333' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      background-size: 16px 16px;
+      padding-right: 30px;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    select:focus {
+      border-color: var(--color-primario);
+      box-shadow: 0 0 0 2px rgba(201, 79, 124, 0.2);
+      outline: none;
+    }
+    /* Tabla */
+    .tabla-contenedor {
+      margin-bottom: 18px;
+      padding: 10px 10px 5px 10px;
+      overflow-x: auto;
+      border: 1px solid var(--color-form-borde);
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+      border-radius: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 14px;
+      background: var(--color-form-bg);
+    }
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    input[type="checkbox"].producto-check {
+      transform: scale(1.2);
+    }
+    th, td {
+      border: 1px solid var(--color-form-borde);
+      padding: 6px;
+      text-align: center;
+    }
+    th {
+      background-color: var(--color-th-bg);
+    }
+    button {
+      user-select: none;
+    }
+    td.money {
+      text-align: right;
+    }
+    /* Exportar/Imprimir */
+    .exportar-section {
+      margin-top: 22px;
+      text-align: right;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    @media (max-width: 800px) {
+      main {
+        max-width: 100%;
+        padding: 0 12px;
+      }
+
+      .form-group {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .section,
+      .exportar-section {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .tabla-contenedor {
+        padding: 6px;
+        overflow-x: auto;
+      }
+
+      table {
+        font-size: 12px;
+        min-width: 700px;
+      }
+
+      input[type="text"],
+      input[type="number"],
+      input[type="date"],
+      input[type="file"],
+      select,
+      button {
+        font-size: 14px;
+        width: 100%;
+        box-sizing: border-box;
+        margin: 0;
+        display: block;
+      }
+
+      #resumenInventario {
+        font-size: 14px;
+        padding: 10px 14px;
+      }
+
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        flex: 1;
+        box-sizing: border-box;
+        min-width: 0;
+      }
+      /* Asegura visibilidad de los botones de acciones en móvil */
+      td:last-child {
+        min-width: 100px;
+        white-space: nowrap;
+      }
+    }
+    /* Ajuste específico para los botones de acción en la tabla */
+    .tabla-contenedor button {
+      padding: 4px 8px;
+      font-size: 12px;
+      margin: 2px;
+      border-radius: 6px;
+    }
+    form { border: 1px solid var(--color-form-borde); }
+  </style>
+</head>
+<body>
+
+  <div id="loader" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: #fff5f7; display: flex; justify-content: center; align-items: center; z-index: 9999; font-size: 20px; color: #c94f7c; font-weight: bold;">
+    Cargando inventario...
+  </div>
+
+  <!-- Novedades de la última actualización (colapsable al pie) -->
+  <details id="novedadesActualizacion" style="max-width: 600px; margin: 40px auto 80px auto; background: #fff5f8; border: 1px solid #ffc9da; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); font-family: sans-serif;">
+    <summary style="padding: 16px; cursor: pointer; color: #c94f7c; font-weight: bold; font-size: 1.1em;">🆕 Ver novedades de la última actualización</summary>
+    <div style="padding: 0 16px 16px 16px; font-size: 0.95em; color: #444;">
+      <ul style="padding-left: 20px; margin-top: 10px;">
+        <li>🔍 Escaneo de productos con cámara (código de barras)</li>
+        <li>📱 Compatible con celular y tablet</li>
+        <li>✏️ Edición rápida desde escaneo</li>
+        <li>🆕 Carga de producto si no existe</li>
+        <li>✅ Corrección de errores y mejoras visuales</li>
+      </ul>
+    </div>
+  </details>
+
+  <div style="text-align: center; margin-bottom: 20px;">
+    <h1 style="margin-bottom: 10px;">Inventario Williams</h1>
+  </div>
+
+  <div id="resumenInventario" style="display: none; background: var(--color-form-bg); border-radius: 8px; padding: 12px 18px; box-shadow: 0 1px 6px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; font-size: 16px; color: var(--color-primario);">
+    <strong>Resumen de Inventario:</strong>
+    <span id="resumenTotalProductos" style="margin: 0 12px;">Productos: 0</span>
+    <span id="resumenTotalUnidades" style="margin: 0 12px;">Unidades: 0</span>
+    <span id="resumenValorTotal" style="margin: 0 12px;">Valor total: $0</span>
+  </div>
+
+  <!-- Selector visual de temas -->
+  <div id="temaSelector" style="display: flex;">
+    <span style="font-weight: bold;">Tema:</span>
+    <button class="tema-btn" id="temaPastel" title="Pastel" tabindex="0" style="background: #ffe9ee;"></button>
+    <button class="tema-btn" id="temaOscuro" title="Oscuro" tabindex="0" style="background: #23242a;"></button>
+    <button class="tema-btn" id="temaMono" title="Monocromo" tabindex="0" style="background: #f5f5f5;"></button>
+  </div>
+  <main style="display: none;" id="contenido">
+    <!-- =================== Formulario de Alta de Producto =================== -->
+    <form id="formProducto">
+      <div class="form-group">
+        <select id="categoriaProducto" required>
+          <option value="">Seleccionar categoría</option>
+          <option value="Fiambrería">Fiambrería</option>
+          <option value="Panadería">Panadería</option>
+          <option value="Limpieza">Limpieza</option>
+          <option value="Alimentos">Alimentos</option>
+        </select>
+      </div>
+      <div class="form-group" style="position: relative;">
+        <input type="text" id="producto" placeholder="Producto" required title="Nombre del producto">
+        <div id="sugerenciasProducto" style="position: absolute; background: #fff; border: 1px solid #ccc; z-index: 1000; max-height: 150px; overflow-y: auto; display: none;"></div>
+        <input type="number" id="unidadesPorCaja" placeholder="Unidades por caja/bulto" min="0" required title="Cuántas unidades vienen por caja o bulto">
+        <input type="number" id="cantidadCajas" placeholder="Cajas/Bultos" min="0" required title="Cantidad de cajas o bultos disponibles">
+        <input type="number" id="unidadesSueltas" placeholder="Unidades sueltas" min="0" required title="Unidades sueltas adicionales">
+        <input type="number" id="precioUnidad" placeholder="Precio por unidad" min="0" step="0.01" required title="Costo por cada unidad">
+        <input type="number" id="precioCosto" placeholder="Precio de costo" min="0" step="0.01" required title="Costo por unidad">
+      </div>
+      <div class="form-group">
+        <label for="codigoBarrasInput">Código de Barras</label>
+        <input type="text" id="codigoBarrasInput" placeholder="Escanear o escribir código">
+      </div>
+      <!-- <input type="date" id="vencimientoProducto" placeholder="Fecha de vencimiento"> -->
+      <div style="display: flex; align-items: center; gap: 14px; margin-top: 12px; flex-wrap: wrap;">
+        <select id="colorPersonalizado">
+          <option value="">Color automático</option>
+          <option value="red">Rojo</option>
+          <option value="yellow">Amarillo</option>
+          <option value="green">Verde</option>
+        </select>
+        <div style="display: flex; gap: 10px;">
+          <button type="submit">Agregar Producto</button>
+          <button type="button" id="btnCancelarFormulario">Cancelar</button>
+        </div>
+      </div>
+      <!-- =================== Gestión de Categorías =================== -->
+      <div class="section" style="margin-bottom: 0;">
+        <input type="text" id="nuevaCategoria" placeholder="Nueva categoría">
+        <button type="button" onclick="agregarCategoria()">Agregar categoría</button>
+        <select id="categoriaABorrar"></select>
+        <button type="button" onclick="borrarCategoria()">Borrar categoría</button>
+      </div>
+    </form>
+  <script>
+    // Botón Cancelar: reinicia el formulario de alta de producto
+    document.addEventListener('DOMContentLoaded', function() {
+      var btnCancelar = document.getElementById('btnCancelarFormulario');
+      var formProducto = document.getElementById('formProducto');
+      if (btnCancelar && formProducto) {
+        btnCancelar.addEventListener('click', function() {
+          // Solo reinicia el formulario, no afecta los datos existentes
+          formProducto.reset();
+          // Si hay una variable de edición, cancela la edición
+          if (typeof editando !== "undefined") {
+            editando = null;
+          }
+        });
+      }
+    });
+  </script>
+
+    <!-- =================== Filtros =================== -->
+    <details open class="section" style="background: var(--color-form-bg); border: 1px solid var(--color-form-borde); border-radius: 8px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+      <summary style="cursor: pointer; font-weight: bold; color: var(--color-primario); font-size: 16px;">Filtros</summary>
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 12px;">
+        <label for="filtroColor">Color:</label>
+        <select id="filtroColor" onchange="actualizarTabla()">
+          <option value="">Todos</option>
+          <option value="red">Rojo</option>
+          <option value="yellow">Amarillo</option>
+          <option value="green">Verde</option>
+        </select>
+        <label for="filtroCategoria">Categoría:</label>
+        <select id="filtroCategoria" onchange="actualizarTabla()">
+          <option value="">Todas</option>
+        </select>
+        <label>
+          <input type="checkbox" id="filtroSeleccionados" onchange="actualizarTabla()"> Solo tildados
+        </label>
+        <input type="text" id="buscador" placeholder="Buscar producto..." oninput="actualizarTabla()" style="flex-grow: 1;">
+        <div id="historialBusqueda" style="position: absolute; background: #fff; border: 1px solid #ccc; max-height: 150px; overflow-y: auto; display: none; z-index: 1000;"></div>
+      </div>
+    </details>
+
+
+    <!-- =================== Tabla de productos (con encabezado y acciones) =================== -->
+    <div class="tabla-contenedor">
+      <table>
+        <thead>
+          <tr>
+            <th class="show-mobile" tabindex="0"></th>
+            <th class="show-mobile" tabindex="0">Producto</th>
+            <th class="show-mobile" tabindex="0">Unidades por caja/bulto</th>
+            <th class="show-mobile" tabindex="0">Cajas/Bultos</th>
+            <th class="show-mobile" tabindex="0">Unidades sueltas</th>
+            <th class="show-mobile" tabindex="0">Total de unidades</th>
+            <th tabindex="0">Precio de costo</th>
+            <th class="show-mobile" tabindex="0">Precio por unidad</th>
+            <th tabindex="0">Ganancia por unidad</th>
+            <th tabindex="0">Valor total</th>
+            <th tabindex="0">Valor costo total</th>
+            <th tabindex="0">Ganancia total</th>
+            <th tabindex="0">Categoría</th>
+            <th tabindex="0">Última modificación</th>
+            <th tabindex="0">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tablaProductos">
+          <!-- Productos aquí -->
+        </tbody>
+      </table>
+    </div>
+    <!-- Tarjetas para móvil -->
+    <div id="tarjetasProductos"></div>
+    <div style="text-align: center; margin-top: 10px;" class="solo-movil">
+      <button onclick="document.querySelector('table').classList.toggle('expandido')">Ver más/menos columnas</button>
+    </div>
+
+    <!-- =================== Exportar/Imprimir =================== -->
+    <div class="exportar-section">
+      <button type="button" onclick="exportarExcel()" tabindex="0">Exportar a Excel</button>
+      <button type="button" onclick="window.print()" tabindex="0">Imprimir productos filtrados</button>
+      <button type="button" onclick="exportarBackup()" tabindex="0" style="font-weight: bold;">Exportar Backup</button>
+      <button type="button" onclick="exportarExcelAPDF()" tabindex="0">Exportar Excel a PDF</button>
+      <input type="file" id="archivoJSON" accept=".json" onchange="importarJSON()" tabindex="0">
+    </div>
+    <!-- =================== Área Drag & Drop JSON =================== -->
+    <div id="dropArea" tabindex="0" aria-label="Soltá aquí tu JSON para importar" style="margin-bottom: 18px;">
+      <span>📂 Soltá aquí tu JSON</span>
+    </div>
+  </main>
+
+  <!-- =================== Scripts =================== -->
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-database-compat.js"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBtVMi942be7lIaVB0BnOohYsSEKf4Z9e8",
+      authDomain: "inventario-williams.firebaseapp.com",
+      databaseURL: "https://inventario-williams-default-rtdb.firebaseio.com",
+      projectId: "inventario-williams",
+      storageBucket: "inventario-williams.firebasestorage.app",
+      messagingSenderId: "427187921441",
+      appId: "1:427187921441:web:44e6279a675cd748e33960"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Exponer para uso global
+    window.firebaseDB = db;
+    window.firebaseRef = (path) => firebase.database().ref(path);
+    window.firebaseSet = (ref, value) => {
+      if (typeof ref.set === 'function') {
+        return ref.set(value);
+      } else {
+        console.error("La referencia de Firebase no tiene método .set");
+      }
+    };
+    window.firebaseOnValue = (ref, callback) => ref.on("value", snapshot => callback(snapshot));
+    window.firebaseUpdate = (ref, value) => ref.update(value);
+  </script>
+  <script>
+    // =================== Historial de búsqueda para el input de productos ===================
+    const historial = JSON.parse(localStorage.getItem("historialBusqueda") || "[]");
+
+    const buscador = document.getElementById("buscador");
+    const historialDiv = document.getElementById("historialBusqueda");
+
+    buscador.addEventListener("input", function () {
+      const texto = this.value.toLowerCase();
+      historialDiv.innerHTML = "";
+      if (!texto) {
+        historialDiv.style.display = "none";
+        return;
+      }
+
+      const resultados = historial.filter(h => h.toLowerCase().includes(texto));
+      if (resultados.length === 0) {
+        historialDiv.style.display = "none";
+        return;
+      }
+
+      resultados.forEach(resultado => {
+        const item = document.createElement("div");
+        item.textContent = resultado;
+        item.style.padding = "6px";
+        item.style.cursor = "pointer";
+        item.addEventListener("mousedown", () => {
+          buscador.value = resultado;
+          historialDiv.style.display = "none";
+          actualizarTabla();
+        });
+        historialDiv.appendChild(item);
+      });
+
+      const rect = buscador.getBoundingClientRect();
+      historialDiv.style.left = `${rect.left + window.scrollX}px`;
+      historialDiv.style.top = `${rect.bottom + window.scrollY}px`;
+      historialDiv.style.width = `${buscador.offsetWidth}px`;
+      historialDiv.style.display = "block";
+    });
+
+    buscador.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && this.value.trim()) {
+        if (!historial.includes(this.value.trim())) {
+          historial.unshift(this.value.trim());
+          if (historial.length > 10) historial.pop(); // máximo 10 entradas
+          localStorage.setItem("historialBusqueda", JSON.stringify(historial));
+        }
+        historialDiv.style.display = "none";
+      }
+    });
+
+    document.addEventListener("click", function (e) {
+      if (!buscador.contains(e.target)) {
+        historialDiv.style.display = "none";
+      }
+    });
+  </script>
+  <script>
+    // =================== Variables principales ===================
+    // =================== Variables principales ===================
+let productosPorLista = {};
+if (!productosPorLista || typeof productosPorLista !== 'object') {
+  productosPorLista = { general: [] };
+}
+if (!productosPorLista.general) productosPorLista.general = [];
+    const form = document.getElementById('formProducto');
+    const tabla = document.getElementById('tablaProductos');
+    // let productos = [];
+    // =================== Gestión de categorías ===================
+    let categorias = new Set();
+
+    function extraerCategoriasDesdeProductos() {
+      if (productosPorLista && productosPorLista.general) {
+        productosPorLista.general.forEach(p => {
+          if (p.categoria) {
+            categorias.add(p.categoria);
+          }
+        });
+      }
+    }
+
+    function actualizarSelectCategorias() {
+      extraerCategoriasDesdeProductos();
+      const select = document.getElementById("categoriaProducto");
+      const borrar = document.getElementById("categoriaABorrar");
+      if (!select || !borrar) return;
+
+      const todasCategorias = Array.from(categorias).sort();
+      select.innerHTML = '<option value="">Seleccionar categoría</option>';
+      borrar.innerHTML = '';
+      todasCategorias.forEach(cat => {
+        const option1 = document.createElement("option");
+        option1.value = cat;
+        option1.textContent = cat;
+        select.appendChild(option1);
+
+        const option2 = document.createElement("option");
+        option2.value = cat;
+        option2.textContent = cat;
+        borrar.appendChild(option2);
+      });
+
+      const filtro = document.getElementById("filtroCategoria");
+      if (filtro) {
+        filtro.innerHTML = '<option value="">Todas</option>';
+        todasCategorias.forEach(cat => {
+          const opt = document.createElement("option");
+          opt.value = cat;
+          opt.textContent = cat;
+          filtro.appendChild(opt);
+        });
+      }
+    }
+
+    function agregarCategoria() {
+      const nueva = document.getElementById("nuevaCategoria").value.trim();
+      if (nueva && !categorias.has(nueva)) {
+        categorias.add(nueva);
+        if (!productosPorLista.categorias) productosPorLista.categorias = [];
+        productosPorLista.categorias = Array.from(categorias);
+        firebaseSet(firebaseRef("productosPorLista/categorias"), Array.from(categorias));
+        actualizarSelectCategorias();
+        document.getElementById("nuevaCategoria").value = "";
+      }
+    }
+
+    function borrarCategoria() {
+      const seleccion = document.getElementById("categoriaABorrar").value;
+      if (seleccion && categorias.has(seleccion)) {
+        categorias.delete(seleccion);
+        productosPorLista.categorias = Array.from(categorias);
+        firebaseSet(firebaseRef("productosPorLista/categorias"), Array.from(categorias));
+        actualizarSelectCategorias();
+      }
+    }
+    let editando = null;
+
+    // =================== Utilidad: obtener color según stock ===================
+    function obtenerColorPorStock(stock, customColor) {
+      if (customColor) return customColor;
+      if (stock >= 0 && stock <= 8) return 'var(--color-red)';
+      if (stock >= 9 && stock <= 25) return 'var(--color-yellow)';
+      return 'var(--color-green)';
+    }
+
+    // =================== Guardar encabezados personalizados ===================
+    function guardarTitulos() {
+      // Esta función ya no guarda en localStorage.
+    }
+
+    // =================== Cargar encabezados desde localStorage ===================
+    function cargarTitulos() {
+      // Esta función ya no carga desde localStorage, solo usa los del HTML actual.
+      // Obsoleto, se mantiene por compatibilidad.
+    }
+
+    // =================== Cargar productos desde Firebase en tiempo real ===================
+    function cargarProductos() {
+      window.firebaseOnValue(window.firebaseRef("productosPorLista"), snapshot => {
+        const data = snapshot.val();
+        // Compatibilidad: si el JSON importado tiene formato plano (array de productos) lo transformamos
+        if (Array.isArray(data)) {
+          productosPorLista = { general: data };
+        } else if (typeof data === "object" && data !== null) {
+          productosPorLista = data;
+        } else {
+          productosPorLista = { general: [] };
+        }
+        if (!productosPorLista.general) {
+          productosPorLista.general = [];
+        }
+        // Sincronizar set local de categorías si existen en productosPorLista
+        if (data && data.categorias) {
+          categorias = new Set(data.categorias);
+        }
+
+        // Notificación de vencimientos próximos
+        const productosActuales = productosPorLista.general;
+        const hayVencimientosProntos = productosActuales.some(p => {
+          if (p.vencimiento) {
+            const hoy = new Date();
+            const fechaVto = new Date(p.vencimiento);
+            const diferencia = Math.ceil((fechaVto - hoy) / (1000 * 60 * 60 * 24));
+            return diferencia <= 30;
+          }
+          return false;
+        });
+        if (hayVencimientosProntos) {
+          const toast = document.createElement('div');
+          toast.textContent = "⚠️ Hay productos que vencen pronto";
+          toast.style.position = 'fixed';
+          toast.style.bottom = '20px';
+          toast.style.right = '20px';
+          toast.style.background = '#ffc107';
+          toast.style.color = '#000';
+          toast.style.padding = '10px 15px';
+          toast.style.borderRadius = '6px';
+          toast.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+          toast.style.zIndex = 9999;
+          document.body.appendChild(toast);
+          setTimeout(() => toast.remove(), 4000);
+        }
+        actualizarSelectCategorias();
+        actualizarTabla();
+        document.getElementById("loader").style.display = "none";
+        document.getElementById("contenido").style.display = "block";
+        document.getElementById("resumenInventario").style.display = "block";
+      });
+    }
+
+    // =================== Eliminar producto por clave de Firebase ===================
+    function eliminarProductoPorClave(clave) {
+      if (!clave) return;
+      const ref = firebaseRef("productosPorLista/general/" + clave);
+      ref.remove()
+        .then(() => {
+          console.log("Producto eliminado correctamente");
+        })
+        .catch(error => {
+          console.error("Error al eliminar producto:", error);
+        });
+    }
+
+    // =================== Actualizar tabla y tarjetas ===================
+    function actualizarTabla() {
+      // Agrupación y comentarios para mayor claridad
+      guardarTitulos(); // Asegura encabezados actualizados antes de pintar filas
+      tabla.innerHTML = '';
+      const fragment = document.createDocumentFragment();
+      const filtro = document.getElementById('filtroColor').value;
+      const filtrarSoloTildados = document.getElementById('filtroSeleccionados')?.checked;
+      const textoBuscar = document.getElementById('buscador')?.value.toLowerCase();
+      // --- Mantener filtro de categoría seleccionado ---
+      // La variable filtroCategoriaInput se declara solo aquí y es utilizada localmente.
+      const filtroCategoriaInput = document.getElementById('filtroCategoria');
+      const categoriaSeleccionada = filtroCategoriaInput?.value;
+      // localStorage.setItem("filtroCategoriaPersistente", categoriaSeleccionada); // Eliminado: solo se persiste en el evento change
+      const lista = productosPorLista.general || [];
+      // Eliminar filtro de vencimiento
+      const productosFiltrados = lista
+        .filter(p => {
+          if (textoBuscar && !p.producto.toLowerCase().includes(textoBuscar)) return false;
+          if (filtrarSoloTildados && !p.seleccionado) return false;
+          if (categoriaSeleccionada && categoriaSeleccionada !== p.categoria) return false;
+          return true;
+        })
+        .sort((a, b) => a.producto.localeCompare(b.producto));
+
+      // --- TABLA (desktop) ---
+      let totalGanancia = 0;
+      let totalCosto = 0;
+      productosFiltrados.forEach(p => {
+        // Buscar clave de Firebase para el producto
+        let firebaseClave = null;
+        if (productosPorLista && productosPorLista.general && typeof productosPorLista.general === "object") {
+          // Si general es un objeto (con claves)
+          if (!Array.isArray(productosPorLista.general)) {
+            for (const [clave, prod] of Object.entries(productosPorLista.general)) {
+              if (prod === p) {
+                firebaseClave = clave;
+                break;
+              }
+            }
+          } else {
+            // Si general es array, buscar por índice
+            firebaseClave = lista.findIndex(prod => prod === p);
+          }
+        }
+        const realIndex = lista.findIndex(prod => prod === p);
+        const totalUnidades = (parseInt(p.unidadesPorCaja) || 0) * (parseInt(p.cantidadCajas) || 0) + (parseInt(p.unidadesSueltas) || 0);
+        const precioUnidad = parseFloat(p.precioUnidad) || 0;
+        const precioCosto = parseFloat(p.precioCosto) || 0;
+        const gananciaPorUnidad = precioUnidad - precioCosto;
+        const valorTotal = totalUnidades * precioUnidad;
+        const valorCostoTotal = totalUnidades * precioCosto;
+        const gananciaTotal = gananciaPorUnidad * totalUnidades;
+        totalGanancia += gananciaTotal;
+        totalCosto += valorCostoTotal;
+        const color = obtenerColorPorStock(totalUnidades, p.customColor);
+        const colorSimple = p.customColor || (totalUnidades <= 8 ? 'red' : totalUnidades <= 25 ? 'yellow' : 'green');
+        if (filtro && filtro !== colorSimple) return;
+
+        const fila = document.createElement('tr');
+        // Colorear fila por categoría
+        if (p.categoria) {
+          const cat = p.categoria.toLowerCase();
+          if (cat === "limpieza") fila.classList.add("cat-limpieza");
+          if (cat === "panadería" || cat === "panaderia") fila.classList.add("cat-panaderia");
+          if (cat === "fiambrería" || cat === "fiambreria") fila.classList.add("cat-fiambreria");
+          if (cat === "alimentos") fila.classList.add("cat-alimentos");
+        }
+        fila.classList.add('fade-in');
+        // Nuevo orden:
+        // 1. Checkbox
+        // 2. Nombre del producto
+        // 3. Unidades por caja o bulto
+        // 4. Cantidad de cajas o bultos
+        // 5. Unidades sueltas
+        // 6. Total unidades
+        // 7. Precio costo
+        // 8. Precio por unidad
+        // 9. Ganancia por unidad
+        //10. Valor total
+        //11. Valor costo total
+        //12. Ganancia total
+        //13. Categoría
+        //14. Última modificación
+        //15. Acciones
+        fila.innerHTML = `
+          <td><input type="checkbox" class="producto-check" data-index="${realIndex}" tabindex="0"></td>
+          <td>${p.producto}</td>
+          <td>${p.unidadesPorCaja}</td>
+          <td>${p.cantidadCajas}</td>
+          <td>${p.unidadesSueltas}</td>
+          <td style="background-color:${color};">${totalUnidades}</td>
+          <td>${(precioCosto || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
+          <td>${precioUnidad.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
+          <td>${gananciaPorUnidad.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
+          <td>${valorTotal.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
+          <td>${valorCostoTotal.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
+          <td>${gananciaTotal.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
+          <td>${p.categoria || '-'}</td>
+        `;
+        // Nueva celda: Última modificación (con estilo condicional usando clases reutilizables)
+        const celdaUltimaMod = fila.insertCell();
+        // Limpiar posibles clases previas
+        celdaUltimaMod.classList.remove("texto-verde", "texto-rojo");
+        if (p.ultimaModificacion) {
+          const ultimaMod = new Date(p.ultimaModificacion);
+          const hoy = new Date();
+          const diferenciaDias = Math.floor((hoy - ultimaMod) / (1000 * 60 * 60 * 24));
+          const fechaFormateada = ultimaMod.toLocaleDateString("es-AR") + " " + ultimaMod.toLocaleTimeString("es-AR", { hour12: false });
+          celdaUltimaMod.textContent = fechaFormateada;
+          if (diferenciaDias <= 2) {
+            celdaUltimaMod.classList.add("texto-verde");
+          } else if (diferenciaDias > 6) {
+            celdaUltimaMod.classList.add("texto-rojo");
+          }
+        } else {
+          celdaUltimaMod.textContent = "-";
+        }
+        // Celda de acciones (botones creados con createElement para evitar editabilidad)
+        const celdaAcciones = document.createElement('td');
+        const botonEditar = document.createElement('button');
+        botonEditar.className = 'accion';
+        botonEditar.textContent = 'Editar';
+        botonEditar.tabIndex = 0;
+        botonEditar.onclick = () => editar(realIndex);
+
+        const botonEliminar = document.createElement('button');
+        botonEliminar.className = 'accion';
+        botonEliminar.textContent = 'Eliminar';
+        botonEliminar.tabIndex = 0;
+        // Usar clave de Firebase si existe, si no, fallback a índice
+        if (firebaseClave !== null && typeof firebaseClave !== "undefined") {
+          botonEliminar.addEventListener("click", () => {
+            if (confirm("¿Estás seguro de eliminar este producto?")) {
+              eliminarProductoPorClave(firebaseClave);
+            }
+          });
+        } else {
+          botonEliminar.addEventListener("click", () => {
+            if (confirm("¿Estás seguro de eliminar este producto?")) {
+              eliminar(realIndex);
+            }
+          });
+        }
+
+        celdaAcciones.appendChild(botonEditar);
+        celdaAcciones.appendChild(botonEliminar);
+        fila.appendChild(celdaAcciones);
+        // Resaltar la celda de ganancia por unidad si corresponde
+        const celdas = fila.querySelectorAll("td");
+        // El índice de ganancia por unidad es 8 (empezando en 0)
+        if (precioCosto > 0 && gananciaPorUnidad / precioCosto > 0.39) {
+          if (celdas[8]) {
+            celdas[8].style.backgroundColor = "#c8f7c5";
+            celdas[8].style.fontWeight = "bold";
+          }
+        }
+        const checkInput = fila.querySelector('.producto-check');
+        if (checkInput) {
+          checkInput.checked = !!p.seleccionado;
+          checkInput.addEventListener('change', function () {
+            lista[realIndex].seleccionado = this.checked;
+            const filtroActual = document.getElementById("filtroCategoria")?.value || "";
+            if (filtroActual) {
+              localStorage.setItem("filtroCategoriaPersistente", filtroActual);
+            }
+            firebaseSet(firebaseRef("productosPorLista"), productosPorLista).then(() => {
+              document.getElementById("filtroCategoria").value = localStorage.getItem("filtroCategoriaPersistente") || "";
+              actualizarTabla();
+            });
+          });
+        }
+        // Accesibilidad: tabindex para celdas editables
+        fila.querySelectorAll("td").forEach((celda, colIndex) => {
+          celda.removeAttribute("contenteditable");
+          celda.contentEditable = false;
+        });
+        fragment.appendChild(fila);
+        // Resaltado si es el último producto agregado
+        if (p === productosPorLista.general.at(-1)) {
+          fila.classList.add('highlighted');
+          setTimeout(() => fila.classList.remove('highlighted'), 1500);
+        }
+      });
+      tabla.appendChild(fragment);
+
+      // --- TARJETAS (móvil) ---
+      const tarjetasCont = document.getElementById("tarjetasProductos");
+      if (tarjetasCont) {
+        tarjetasCont.innerHTML = "";
+      productosFiltrados.forEach(p => {
+        // Buscar clave de Firebase para el producto
+        let firebaseClave = null;
+        if (productosPorLista && productosPorLista.general && typeof productosPorLista.general === "object") {
+          // Si general es un objeto (con claves)
+          if (!Array.isArray(productosPorLista.general)) {
+            for (const [clave, prod] of Object.entries(productosPorLista.general)) {
+              if (prod === p) {
+                firebaseClave = clave;
+                break;
+              }
+            }
+          } else {
+            // Si general es array, buscar por índice
+            firebaseClave = lista.findIndex(prod => prod === p);
+          }
+        }
+        const realIndex = lista.findIndex(prod => prod === p);
+        const totalUnidades = (parseInt(p.unidadesPorCaja) || 0) * (parseInt(p.cantidadCajas) || 0) + (parseInt(p.unidadesSueltas) || 0);
+        const precioUnidad = parseFloat(p.precioUnidad) || 0;
+        const precioCosto = parseFloat(p.precioCosto) || 0;
+        const gananciaPorUnidad = precioUnidad - precioCosto;
+        const valorTotal = totalUnidades * precioUnidad;
+        const valorCostoTotal = totalUnidades * precioCosto;
+        const gananciaTotal = gananciaPorUnidad * totalUnidades;
+        const color = obtenerColorPorStock(totalUnidades, p.customColor);
+        const card = document.createElement("div");
+        card.classList.add("producto-card", "fade-in");
+        // Color por categoría
+        if (p.categoria) {
+          const cat = p.categoria.toLowerCase();
+          if (cat === "limpieza") card.classList.add("cat-limpieza");
+          if (cat === "panadería" || cat === "panaderia") card.classList.add("cat-panaderia");
+          if (cat === "fiambrería" || cat === "fiambreria") card.classList.add("cat-fiambreria");
+          if (cat === "alimentos") card.classList.add("cat-alimentos");
+        }
+        // Reorganizar el orden de las filas de detalles para coincidir con la tabla
+        card.innerHTML = `
+          <div class="card-row"><strong>${p.producto}</strong></div>
+          <div class="detalles-producto" style="display: none;">
+            <div class="card-row">Unidades/caja: <span>${p.unidadesPorCaja}</span></div>
+            <div class="card-row">Cajas/Bultos: <span>${p.cantidadCajas}</span></div>
+            <div class="card-row">Unidades sueltas: <span>${p.unidadesSueltas}</span></div>
+            <div class="card-row">Total unidades: <span style="background:${color};padding:2px 10px;border-radius:5px;">${totalUnidades}</span></div>
+            <div class="card-row">Precio costo: <span>$${(precioCosto || 0).toLocaleString('es-AR')}</span></div>
+            <div class="card-row">Precio por unidad: <span>$${precioUnidad.toLocaleString('es-AR')}</span></div>
+            <div class="card-row">Ganancia por unidad: <span>$${gananciaPorUnidad.toLocaleString('es-AR')}</span></div>
+            <div class="card-row">Valor total: <span>$${valorTotal.toLocaleString('es-AR')}</span></div>
+            <div class="card-row">Valor costo total: <span>$${valorCostoTotal.toLocaleString('es-AR')}</span></div>
+            <div class="card-row">Ganancia total: <span>$${gananciaTotal.toLocaleString('es-AR')}</span></div>
+            <div class="card-row">Categoría: <span>${p.categoria || '-'}</span></div>
+            <div class="card-row">
+              Modificado: <span style="${(() => {
+                if (!p.ultimaModificacion) return '';
+                const ultimaMod = new Date(p.ultimaModificacion);
+                const hoy = new Date();
+                const diferenciaDias = Math.floor((hoy - ultimaMod) / (1000 * 60 * 60 * 24));
+                if (diferenciaDias <= 2) return 'color:green';
+                if (diferenciaDias > 6) return 'color:red';
+                return '';
+              })()}">${
+                p.ultimaModificacion
+                  ? (function() {
+                      const ultimaMod = new Date(p.ultimaModificacion);
+                      return ultimaMod.toLocaleDateString("es-AR") + " " + ultimaMod.toLocaleTimeString("es-AR", { hour12: false });
+                    })()
+                  : '-'
+              }</span>
+            </div>
+          </div>
+          <div class="acciones"></div>
+        `;
+        tarjetasCont.appendChild(card);
+        // Acciones
+        const accionesDiv = card.querySelector(".acciones");
+        // Botón detalles
+        const btnDetalles = document.createElement("button");
+        btnDetalles.className = "btn-toggle-detalles";
+        btnDetalles.tabIndex = 0;
+        btnDetalles.textContent = "Ver detalles";
+        accionesDiv.appendChild(btnDetalles);
+        // Botón editar
+        const btnEditar = document.createElement("button");
+        btnEditar.tabIndex = 0;
+        btnEditar.textContent = "Editar";
+        btnEditar.addEventListener("click", () => editar(realIndex));
+        accionesDiv.appendChild(btnEditar);
+        // Botón eliminar
+        const btnEliminar = document.createElement("button");
+        btnEliminar.tabIndex = 0;
+        btnEliminar.textContent = "Eliminar";
+        if (firebaseClave !== null && typeof firebaseClave !== "undefined") {
+          btnEliminar.addEventListener("click", () => {
+            if (confirm("¿Estás seguro de eliminar este producto?")) {
+              eliminarProductoPorClave(firebaseClave);
+            }
+          });
+        } else {
+          btnEliminar.addEventListener("click", () => {
+            if (confirm("¿Estás seguro de eliminar este producto?")) {
+              eliminar(realIndex);
+            }
+          });
+        }
+        accionesDiv.appendChild(btnEliminar);
+        // Checkbox
+        const labelCheck = document.createElement("label");
+        labelCheck.style.fontSize = "13px";
+        labelCheck.style.marginLeft = "7px";
+        labelCheck.style.cursor = "pointer";
+        labelCheck.innerHTML = `<input type="checkbox" class="producto-check" data-index="${realIndex}" tabindex="0" ${p.seleccionado ? "checked" : ""}> Tildado`;
+        accionesDiv.appendChild(labelCheck);
+        // Toggle detalles-producto
+        const toggleBtn = btnDetalles;
+        const detallesDiv = card.querySelector(".detalles-producto");
+        if (toggleBtn && detallesDiv) {
+          toggleBtn.addEventListener("click", () => {
+            const visible = detallesDiv.style.display === "block";
+            if (visible) {
+              detallesDiv.style.display = "none";
+              toggleBtn.textContent = "Ver detalles";
+            } else {
+              detallesDiv.style.display = "block";
+              toggleBtn.textContent = "Ocultar detalles";
+            }
+          });
+        }
+        // Checkbox listeners
+        const check = labelCheck.querySelector('.producto-check');
+        if (check) {
+          check.addEventListener('change', function () {
+            lista[realIndex].seleccionado = this.checked;
+            const filtroActual = document.getElementById("filtroCategoria")?.value || "";
+            firebaseSet(firebaseRef(firebaseDB, "productosPorLista"), productosPorLista).then(() => {
+              if (filtroActual) {
+                localStorage.setItem("filtroCategoriaPersistente", filtroActual);
+              }
+              actualizarTabla();
+              if (filtroActual) {
+                document.getElementById("filtroCategoria").value = filtroActual;
+              }
+            });
+          });
+        }
+      });
+      }
+      // Mostrar el resumen visual
+      document.getElementById("resumenInventario").style.display = "block";
+      // Actualizar resumen de inventario
+      const totalProductos = productosFiltrados.length;
+      let totalUnidades = 0;
+      let totalValor = 0;
+      productosFiltrados.forEach(p => {
+        const unidades = (parseInt(p.unidadesPorCaja) || 0) * (parseInt(p.cantidadCajas) || 0) + (parseInt(p.unidadesSueltas) || 0);
+        const valor = unidades * (parseFloat(p.precioUnidad) || 0);
+        totalUnidades += unidades;
+        totalValor += valor;
+      });
+      document.getElementById("resumenTotalProductos").textContent = `Productos: ${totalProductos}`;
+      document.getElementById("resumenTotalUnidades").textContent = `Unidades: ${totalUnidades}`;
+      document.getElementById("resumenValorTotal").textContent = `Valor total: $${totalValor.toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
+      document.getElementById("resumenGananciaTotal")?.remove();
+      document.getElementById("resumenCostoTotal")?.remove();
+      const gananciaSpan = document.createElement("span");
+      gananciaSpan.id = "resumenGananciaTotal";
+      gananciaSpan.style.margin = "0 12px";
+      gananciaSpan.textContent = `Ganancia total: $${totalGanancia.toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
+      document.getElementById("resumenInventario").appendChild(gananciaSpan);
+      // Mostrar costo total acumulado
+      const costoSpan = document.createElement("span");
+      costoSpan.id = "resumenCostoTotal";
+      costoSpan.style.margin = "0 12px";
+      costoSpan.textContent = `Costo total: $${totalCosto.toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
+      document.getElementById("resumenInventario").appendChild(costoSpan);
+      // --- (El bloque que restauraba el filtro de categoría persistente aquí ha sido eliminado) ---
+    }
+
+    // =================== Editar producto ===================
+    function editar(index) {
+      const lista = productosPorLista.general || [];
+      const p = lista[index];
+      document.getElementById('producto').value = p.producto;
+      document.getElementById('unidadesPorCaja').value = p.unidadesPorCaja;
+      document.getElementById('cantidadCajas').value = p.cantidadCajas;
+      document.getElementById('unidadesSueltas').value = p.unidadesSueltas;
+      document.getElementById('precioUnidad').value = p.precioUnidad;
+      document.getElementById('precioCosto').value = p.precioCosto;
+      document.getElementById('colorPersonalizado').value = p.customColor || '';
+      document.getElementById('categoriaProducto').value = p.categoria || '';
+      // document.getElementById('vencimientoProducto').value = p.vencimiento || '';
+      editando = index;
+      // Llevar el foco al formulario y al primer campo
+      form.scrollIntoView({ behavior: "smooth" });
+      document.getElementById('producto').focus();
+      // Animación al formulario
+      form.classList.add("anim-agregar");
+      setTimeout(() => form.classList.remove("anim-agregar"), 400);
+    }
+
+    // =================== Eliminar producto (con animación y log) ===================
+    function eliminar(index) {
+      const lista = productosPorLista.general || [];
+      // Animación de fade out
+      const filas = document.querySelectorAll("#tablaProductos tr, .producto-card");
+      if (filas[index]) {
+        filas[index].classList.add("anim-eliminar");
+        setTimeout(() => {
+          const eliminado = lista[index];
+          lista.splice(index, 1);
+          firebaseSet(firebaseRef("productosPorLista"), productosPorLista);
+          actualizarTabla();
+          agregarHistorial('baja', eliminado);
+        }, 400);
+      } else {
+        // fallback
+        const eliminado = lista[index];
+        lista.splice(index, 1);
+        firebaseSet(firebaseRef(firebaseDB, "productosPorLista"), productosPorLista);
+        actualizarTabla();
+        agregarHistorial('baja', eliminado);
+      }
+    }
+
+    // =================== Agregar producto (evento submit simplificado y robusto) ===================
+    const formProductoSubmit = document.getElementById('formProducto');
+    formProductoSubmit.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const producto = String(document.getElementById('producto').value || "").trim();
+      const unidadesPorCaja = parseInt(document.getElementById('unidadesPorCaja').value) || 0;
+      const cantidadCajas = parseInt(document.getElementById('cantidadCajas').value) || 0;
+      const unidadesSueltas = parseInt(document.getElementById('unidadesSueltas').value) || 0;
+
+      const precioUnidadRaw = document.getElementById('precioUnidad').value;
+      const precioUnidad = parseFloat((precioUnidadRaw || "").toString().replace(/\./g, '').replace(',', '.')) || 0;
+      const precioCostoRaw = document.getElementById('precioCosto').value;
+      const precioCosto = parseFloat((precioCostoRaw || "").toString().replace(/\./g, '').replace(',', '.')) || 0;
+
+      const customColor = document.getElementById('colorPersonalizado').value || null;
+      const categoriaProducto = document.getElementById('categoriaProducto').value;
+      // const vencimiento = document.getElementById('vencimientoProducto').value || null;
+
+      // Guardar la última categoría utilizada en localStorage
+      localStorage.setItem('ultimaCategoria', categoriaProducto);
+
+      if (!producto || !categoriaProducto || isNaN(unidadesPorCaja) || isNaN(cantidadCajas) || isNaN(unidadesSueltas) || isNaN(precioUnidad)) {
+        mostrarError("⚠️ Todos los campos son obligatorios.");
+        return;
+      }
+
+      const codigoBarras = document.getElementById("codigoBarrasInput").value.trim();
+      const nuevoProducto = {
+        producto,
+        unidadesPorCaja,
+        cantidadCajas,
+        unidadesSueltas,
+        precioUnidad,
+        precioCosto,
+        customColor,
+        categoria: categoriaProducto,
+        codigoBarras,
+        // vencimiento,
+        seleccionado: false,
+        ultimaModificacion: new Date().toISOString()
+      };
+
+      const lista = productosPorLista.general || [];
+      if (!productosPorLista.general) productosPorLista.general = lista;
+
+      if (editando !== null) {
+        lista[editando] = { ...nuevoProducto };
+        // Actualizar la fecha de última modificación al editar
+        lista[editando].ultimaModificacion = new Date().toISOString();
+        editando = null;
+      } else {
+        const indexExistente = lista.findIndex(p => p.producto.toLowerCase() === producto.toLowerCase());
+        if (indexExistente !== -1) {
+          lista[indexExistente] = {
+            ...lista[indexExistente],
+            cantidadCajas: lista[indexExistente].cantidadCajas + cantidadCajas,
+            unidadesSueltas: lista[indexExistente].unidadesSueltas + unidadesSueltas,
+            ultimaModificacion: new Date().toISOString()
+          };
+        } else {
+          lista.push(nuevoProducto);
+        }
+      }
+
+      productosPorLista.general = lista;
+      // Guardar las categorías en productosPorLista.categorias antes de guardar en Firebase
+      if (!productosPorLista.categorias) productosPorLista.categorias = [];
+      productosPorLista.categorias = Array.from(categorias);
+
+      firebaseSet(firebaseRef("productosPorLista"), productosPorLista)
+        .then(() => {
+          console.log("✅ Datos guardados correctamente en Firebase.");
+        })
+        .catch(err => {
+          console.error("❌ Error al guardar en Firebase:", err);
+          mostrarError("❌ No se pudo guardar en la base de datos.");
+        });
+
+      formProductoSubmit.reset();
+      // Volver a seleccionar la última categoría después del reset
+      const ultimaCategoria = localStorage.getItem('ultimaCategoria');
+      if (ultimaCategoria) {
+        document.getElementById('categoriaProducto').value = ultimaCategoria;
+      }
+      actualizarTabla();
+      // Restaurar filtro de categoría después de agregar producto
+      const filtroActual = localStorage.getItem("filtroCategoriaPersistente");
+      if (filtroActual) {
+        document.getElementById("filtroCategoria").value = filtroActual;
+      }
+    });
+    // =================== Cargar la última categoría seleccionada al cargar la página ===================
+    document.addEventListener('DOMContentLoaded', () => {
+      const categoriaGuardada = localStorage.getItem('ultimaCategoria');
+      if (categoriaGuardada) {
+        document.getElementById('categoriaProducto').value = categoriaGuardada;
+      }
+      // Cuando el usuario cambia la categoría manualmente, actualizar localStorage
+      const catSelect = document.getElementById('categoriaProducto');
+      if (catSelect) {
+        catSelect.addEventListener('change', function() {
+          if (this.value) {
+            localStorage.setItem('ultimaCategoria', this.value);
+          }
+        });
+      }
+      // Restaurar y sincronizar el filtro de categoría persistente al cargar la página
+      const filtroCategoriaInput = document.getElementById('filtroCategoria');
+      const persistida = localStorage.getItem("filtroCategoriaPersistente");
+      if (persistida && filtroCategoriaInput) {
+        filtroCategoriaInput.value = persistida;
+      }
+
+      filtroCategoriaInput?.addEventListener("change", () => {
+        localStorage.setItem("filtroCategoriaPersistente", filtroCategoriaInput.value);
+        actualizarTabla();
+      });
+    });
+
+    // =================== Borrar columna por nombre ===================
+    function borrarColumnaPorNombre() {
+      const nombreCol = document.getElementById("nombreColumnaABorrar").value.trim().toLowerCase();
+      if (!nombreCol) return;
+      const ths = document.querySelectorAll("thead th");
+      let indexABorrar = -1;
+      ths.forEach((th, index) => {
+        if (th.textContent.trim().toLowerCase() === nombreCol) {
+          indexABorrar = index;
+        }
+      });
+      if (indexABorrar === -1) return;
+      // Borrar encabezado
+      ths[indexABorrar].remove();
+      // Borrar celdas correspondientes en el body
+      const filas = tabla.querySelectorAll("tr");
+      filas.forEach(fila => {
+        const celdas = fila.querySelectorAll("td");
+        if (celdas[indexABorrar]) {
+          celdas[indexABorrar].remove();
+        }
+      });
+      guardarTitulos();
+      document.getElementById("nombreColumnaABorrar").value = "";
+    }
+
+    // =================== Agregar columna ===================
+    function agregarColumna() {
+      const nombre = document.getElementById("nuevoNombreColumna").value.trim();
+      if (!nombre) return;
+      // Agregar al encabezado
+      const theadRow = document.querySelector("thead tr");
+      const th = document.createElement("th");
+      //th.contentEditable = true;
+      th.textContent = nombre;
+      theadRow.appendChild(th);
+      // Agregar celdas vacías a cada fila existente
+      const rows = tabla.querySelectorAll("tr");
+      rows.forEach(row => {
+        const td = document.createElement("td");
+        //td.contentEditable = true;
+        td.textContent = "";
+        const ultimaCelda = row.lastElementChild;
+        row.insertBefore(td, ultimaCelda);
+      });
+      document.getElementById("nuevoNombreColumna").value = "";
+      guardarTitulos();
+    }
+
+    // =================== Exportar a Excel (solo productos filtrados/visibles) ===================
+    function exportarExcel() {
+      let tablaExport = "<table border='1'><tr>";
+      document.querySelectorAll("thead th").forEach(th => {
+        tablaExport += "<th>" + th.textContent.trim() + "</th>";
+      });
+      tablaExport += "</tr>";
+      // Solo filas visibles (filtradas)
+      document.querySelectorAll("#tablaProductos tr").forEach(row => {
+        if (row.offsetParent === null) return; // oculto
+        tablaExport += "<tr>";
+        row.querySelectorAll("td").forEach(td => {
+          tablaExport += "<td>" + td.textContent.trim() + "</td>";
+        });
+        tablaExport += "</tr>";
+      });
+      tablaExport += "</table>";
+      const blob = new Blob([tablaExport], { type: "application/vnd.ms-excel" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "inventario.xls";
+      link.click();
+    }
+    // =================== Exportar Backup (todo el estado actual, productosPorLista) ===================
+    function exportarBackup() {
+      const blob = new Blob([JSON.stringify({ productosPorLista }, null, 2)], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "backup_inventario.json";
+      link.click();
+    }
+
+    // =================== Exportar Excel a PDF ===================
+    function exportarExcelAPDF() {
+      const tabla = document.querySelector(".tabla-contenedor table");
+      if (!tabla) return;
+
+      // Recolectar los encabezados
+      const headers = [];
+      tabla.querySelectorAll("thead th").forEach(th => {
+        headers.push(th.textContent.trim());
+      });
+
+      // Recolectar los datos visibles
+      const data = [];
+      tabla.querySelectorAll("#tablaProductos tr").forEach(row => {
+        if (row.offsetParent === null) return; // oculto
+        const rowData = [];
+        row.querySelectorAll("td").forEach(td => {
+          rowData.push(td.textContent.trim());
+        });
+        data.push(rowData);
+      });
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: "landscape" });
+      doc.autoTable({
+        head: [headers],
+        body: data,
+        margin: { top: 20 },
+        styles: { fontSize: 8 }
+      });
+      doc.save("inventario.pdf");
+    }
+
+    // =================== Exportar a JSON ===================
+    function exportarJSON() {
+      const lista = productosPorLista.general || [];
+      const listaExportada = lista.map(p => ({
+        producto: p.producto,
+        unidadesPorCaja: p.unidadesPorCaja,
+        cantidadCajas: p.cantidadCajas,
+        unidadesSueltas: p.unidadesSueltas,
+        customColor: p.customColor,
+        precioUnidad: p.precioUnidad,
+        categoria: p.categoria,
+        // vencimiento: p.vencimiento,
+        seleccionado: !!p.seleccionado
+      }));
+
+      const blob = new Blob([JSON.stringify(listaExportada, null, 2)], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "inventario.json";
+      link.click();
+    }
+
+    // =================== Importar desde JSON (versión mejorada) ===================
+    function importarJSON() {
+      const input = document.getElementById('archivoJSON');
+      const file = input.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          let actualizado = false;
+
+          if (Array.isArray(data) && data.every(p => typeof p === "object" && "producto" in p)) {
+            productosPorLista.general = data.map(p => ({
+              producto: typeof p.producto === "string" ? p.producto : "",
+              unidadesPorCaja: parseInt(p.unidadesPorCaja) || 0,
+              cantidadCajas: parseInt(p.cantidadCajas) || 0,
+              unidadesSueltas: parseInt(p.unidadesSueltas) || 0,
+              customColor: p.customColor || null,
+              precioUnidad: parseFloat(p.precioUnidad) || 0,
+              categoria: p.categoria || "",
+              // vencimiento: p.vencimiento || null,
+              seleccionado: !!p.seleccionado
+            }));
+            firebaseSet(firebaseRef(firebaseDB, "productosPorLista"), productosPorLista)
+              .then(() => {
+                console.log("✅ Datos guardados correctamente en Firebase.");
+              })
+              .catch(err => {
+                console.error("❌ Error al guardar en Firebase:", err);
+                mostrarError("❌ No se pudo guardar en la base de datos.");
+              });
+            mostrarAviso("✅ Archivo importado correctamente");
+            actualizado = true;
+          } else if (typeof data === "object" && "productosPorLista" in data) {
+            productosPorLista = data.productosPorLista;
+            firebaseSet(firebaseRef(firebaseDB, "productosPorLista"), productosPorLista);
+            mostrarAviso("✅ Archivo importado correctamente");
+            actualizado = true;
+          }
+
+          if (actualizado) {
+            actualizarSelectCategorias();
+          }
+
+          if (!actualizado) {
+            mostrarError("❌ El archivo no contiene un formato válido. Asegurate de que sea una lista de productos o contenga productosPorLista.");
+          }
+
+        } catch (err) {
+          mostrarError("⚠️ Error al leer el archivo JSON. Asegurate de que esté bien formado.");
+        }
+      };
+
+      reader.readAsText(file);
+    }
+
+    // =================== Historial de cambios en localStorage ===================
+    function agregarHistorial(accion, producto) {
+      let historialCambios = [];
+      try {
+        historialCambios = JSON.parse(localStorage.getItem("historialCambios") || "[]");
+      } catch (e) {}
+      historialCambios.unshift({
+        accion,
+        producto: producto ? { ...producto } : null,
+        fecha: new Date().toISOString()
+      });
+      if (historialCambios.length > 200) historialCambios.pop();
+      localStorage.setItem("historialCambios", JSON.stringify(historialCambios));
+    }
+
+    // Mostrar errores sin alert()
+    function mostrarError(mensaje) {
+      const alerta = document.createElement("div");
+      alerta.textContent = mensaje;
+      alerta.style.position = "fixed";
+      alerta.style.bottom = "20px";
+      alerta.style.left = "20px";
+      alerta.style.background = "#ffcccc";
+      alerta.style.color = "#900";
+      alerta.style.padding = "10px 16px";
+      alerta.style.borderRadius = "8px";
+      alerta.style.boxShadow = "0 2px 6px rgba(0,0,0,0.15)";
+      alerta.style.zIndex = 9999;
+      document.body.appendChild(alerta);
+      setTimeout(() => alerta.remove(), 5000);
+    }
+
+    function mostrarAviso(mensaje) {
+      const aviso = document.createElement("div");
+      aviso.textContent = mensaje;
+      aviso.style.position = "fixed";
+      aviso.style.bottom = "20px";
+      aviso.style.left = "20px";
+      aviso.style.background = "#ccffcc";
+      aviso.style.color = "#060";
+      aviso.style.padding = "10px 16px";
+      aviso.style.borderRadius = "8px";
+      aviso.style.boxShadow = "0 2px 6px rgba(0,0,0,0.15)";
+      aviso.style.zIndex = 9999;
+      document.body.appendChild(aviso);
+      setTimeout(() => aviso.remove(), 5000);
+    }
+
+    // =================== Inicialización ===================
+    // Inicializa el nodo productosPorLista si no existe en la base de datos
+    firebaseRef("productosPorLista").once("value", snapshot => {
+      if (!snapshot.exists()) {
+        firebaseSet(firebaseRef("productosPorLista"), { general: [] });
+      }
+    });
+    cargarProductos();
+    cargarTitulos();
+    actualizarSelectCategorias();
+    actualizarTabla();
+    // Ocultar el resumen al inicio
+    document.getElementById("resumenInventario").style.display = "none";
+
+    // Exponer funciones globales para HTML inline handlers
+    window.editar = editar;
+    window.eliminar = eliminar;
+    window.eliminarProductoPorClave = eliminarProductoPorClave;
+    window.borrarColumnaPorNombre = borrarColumnaPorNombre;
+    window.agregarColumna = agregarColumna;
+    window.exportarExcel = exportarExcel;
+    window.exportarJSON = exportarJSON;
+    window.importarJSON = importarJSON;
+    window.exportarBackup = exportarBackup;
+    window.agregarCategoria = agregarCategoria;
+    window.borrarCategoria = borrarCategoria;
+  </script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  <script>
+    // Exportar a PDF solo productos visibles/filtrados (texto reconocible)
+    function exportarPDF() {
+      const tabla = document.querySelector(".tabla-contenedor table");
+      if (!tabla) return;
+
+      const tablaClon = tabla.cloneNode(true);
+
+      // Elimina botones y checkboxes para una impresión limpia
+      tablaClon.querySelectorAll("button, input[type='checkbox']").forEach(el => el.remove());
+
+      // Crea contenedor temporal
+      const contenedor = document.createElement("div");
+      contenedor.style.position = "absolute";
+      contenedor.style.left = "-9999px";
+      contenedor.style.background = "#fff";
+      contenedor.appendChild(tablaClon);
+      document.body.appendChild(contenedor);
+
+      const opt = {
+        margin: 0.5,
+        filename: 'inventario.pdf',
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: "#fff"
+        },
+        jsPDF: { unit: 'pt', format: 'a4', orientation: 'landscape' }
+      };
+
+      html2pdf().from(contenedor).set(opt).save().then(() => {
+        document.body.removeChild(contenedor);
+      });
+    }
+  </script>
+  <!-- Botón flotante para agregar producto en móvil -->
+  <button id="btnFlotanteAgregar" title="Agregar producto" tabindex="0" style="position: fixed; bottom: 28px; right: 28px; z-index: 9999; font-size: 30px; border-radius: 50%; width: 58px; height: 58px; background: var(--color-primario); color: #fff; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.13); cursor: pointer; display: flex; justify-content: center; align-items: center;">+</button>
+  <button id="irArriba" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })">↑</button>
+
+  <!-- Botón flotante y contenedor de escáner de código de barras -->
+  <button id="btnEscanear" title="Escanear código de barras" style="position: fixed; bottom: 100px; right: 28px; z-index: 9999; font-size: 28px; border-radius: 50%; width: 54px; height: 54px; background: #c94f7c; color: #fff; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.13); cursor: pointer; display: flex; justify-content: center; align-items: center;">📷</button>
+  <div id="scannerContainer" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
+    <div id="qr-reader" style="width: 300px;"></div>
+    <button onclick="cerrarScanner()" style="margin-top: 12px;">Cancelar</button>
+  </div>
+  <script>
+    // =================== Inicialización del escáner de código de barras ===================
+    const scannerContainer = document.getElementById("scannerContainer");
+    const btnEscanear = document.getElementById("btnEscanear");
+
+    btnEscanear.addEventListener("click", () => {
+      scannerContainer.style.display = "flex";
+      startScanner();
+    });
+
+    function cerrarScanner() {
+      const scannerContainer = document.getElementById("scannerContainer");
+      scannerContainer.style.display = "none";
+      if (window.qrScanner) {
+        window.qrScanner.stop().then(() => {
+          return window.qrScanner.clear();
+        }).then(() => {
+          document.getElementById("qr-reader").innerHTML = "";
+          window.qrScanner = null;
+        }).catch(err => {
+          console.error("Error cerrando escáner:", err);
+        });
+      }
+    }
+
+    function startScanner() {
+      const qrRegion = document.getElementById("qr-reader");
+      if (!qrRegion) return;
+
+      if (window.qrScanner) {
+        window.qrScanner.clear().then(() => iniciarEscaneo(qrRegion));
+      } else {
+        iniciarEscaneo(qrRegion);
+      }
+    }
+
+    function iniciarEscaneo(qrRegion) {
+      window.qrScanner = new Html5Qrcode("qr-reader");
+      Html5Qrcode.getCameras().then(devices => {
+        if (devices && devices.length) {
+          window.qrScanner.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: 250 },
+            (decodedText) => {
+              cerrarScanner();
+              buscarProductoPorCodigo(decodedText);
+            },
+            (errorMsg) => {
+              console.warn("Escaneo fallido:", errorMsg);
+            }
+          );
+        } else {
+          alert("No se detectó ninguna cámara.");
+          cerrarScanner();
+        }
+      }).catch(err => {
+        console.error("Error accediendo a la cámara:", err);
+        alert("Error accediendo a la cámara: " + err.message);
+        cerrarScanner();
+      });
+    }
+
+    function buscarProductoPorCodigo(codigo) {
+      const productos = firebaseDB.ref("productosPorLista/general");
+      productos.once("value").then(snapshot => {
+        const lista = snapshot.val();
+        const clave = Object.keys(lista || {}).find(k => lista[k].codigoBarras === codigo);
+        if (clave) {
+          const p = lista[clave];
+          const tarjeta = document.createElement("div");
+          tarjeta.id = "productoEscaneado";
+          tarjeta.innerHTML = `
+            <h3>${p.nombre || p.producto || ""}</h3>
+            <p><strong>Precio:</strong> $${p.precio || p.precioUnidad || ""}</p>
+            <p><strong>Unidades:</strong> ${p.unidades || (typeof p.unidadesPorCaja !== "undefined" && typeof p.cantidadCajas !== "undefined"
+              ? ((parseInt(p.unidadesPorCaja) || 0) * (parseInt(p.cantidadCajas) || 0) + (parseInt(p.unidadesSueltas) || 0))
+              : 0)}</p>
+            <p><strong>Código:</strong> ${p.codigoBarras || ""}</p>
+            <div class="acciones">
+              <button onclick="document.getElementById('productoEscaneado').remove()">Cerrar</button>
+              <button onclick="cargarProductoEnFormulario('${clave}')">Editar</button>
+            </div>
+          `;
+          document.body.appendChild(tarjeta);
+        } else {
+          if (confirm("Código no encontrado. ¿Deseás cargarlo como nuevo producto?")) {
+            document.getElementById("codigoBarrasInput")?.focus();
+            document.getElementById("codigoBarrasInput").value = codigo;
+            document.getElementById("formProducto").scrollIntoView({ behavior: "smooth" });
+          }
+        }
+      });
+    }
+
+    // Cargar producto en formulario correctamente
+    function cargarProductoEnFormulario(clave) {
+      const ref = firebaseRef("productosPorLista/general/" + clave);
+      ref.once("value").then(snapshot => {
+        const p = snapshot.val();
+        // Asignar valores a los campos correctos del formulario
+        document.getElementById("producto").value = p.nombre || p.producto || "";
+        document.getElementById("cantidadCajas").value = p.cajas || p.cantidadCajas || 0;
+        document.getElementById("precioUnidad").value = p.precio || p.precioUnidad || "";
+        document.getElementById("codigoBarrasInput").value = p.codigoBarras || "";
+        // Asignar otros campos si existen
+        if (typeof p.unidadesPorCaja !== "undefined") {
+          document.getElementById("unidadesPorCaja").value = p.unidadesPorCaja || 0;
+        }
+        if (typeof p.unidadesSueltas !== "undefined") {
+          document.getElementById("unidadesSueltas").value = p.unidadesSueltas || 0;
+        }
+        if (typeof p.precioCosto !== "undefined") {
+          document.getElementById("precioCosto").value = p.precioCosto || "";
+        }
+        if (typeof p.categoria !== "undefined") {
+          document.getElementById("categoriaProducto").value = p.categoria || "";
+        }
+        if (typeof p.customColor !== "undefined") {
+          document.getElementById("colorPersonalizado").value = p.customColor || "";
+        }
+        document.getElementById("formProducto").style.display = "block";
+        document.getElementById("formProducto").scrollIntoView({ behavior: "smooth" });
+        document.getElementById("productoEscaneado")?.remove();
+      });
+    }
+    // Exponer para botón cancelar
+    window.cerrarScanner = cerrarScanner;
+  </script>
+  <script>
+    // =================== Autocompletado para input producto ===================
+    document.addEventListener('DOMContentLoaded', function () {
+      const inputProducto = document.getElementById("producto");
+      const sugerenciasDiv = document.getElementById("sugerenciasProducto");
+      if (inputProducto && sugerenciasDiv) {
+        inputProducto.addEventListener("input", function () {
+          const input = this;
+          const texto = input.value.toLowerCase();
+          if (!texto) {
+            sugerenciasDiv.style.display = "none";
+            return;
+          }
+          const lista = productosPorLista.general || [];
+          const coincidencias = [...new Set(lista
+            .filter(p => p.producto && p.producto.toLowerCase().includes(texto))
+            .map(p => p.producto))];
+          if (coincidencias.length === 0) {
+            sugerenciasDiv.style.display = "none";
+            return;
+          }
+          sugerenciasDiv.innerHTML = "";
+          coincidencias.forEach(nombre => {
+            const div = document.createElement("div");
+            div.textContent = nombre;
+            div.style.padding = "6px";
+            div.style.cursor = "pointer";
+            div.addEventListener("mousedown", () => {
+              input.value = nombre;
+              sugerenciasDiv.style.display = "none";
+            });
+            sugerenciasDiv.appendChild(div);
+          });
+          // Posicionamiento relativo al input usando offsetParent
+          const parent = input.offsetParent;
+          const rect = input.getBoundingClientRect();
+          const parentRect = parent ? parent.getBoundingClientRect() : { top: 0, left: 0 };
+          sugerenciasDiv.style.position = "absolute";
+          sugerenciasDiv.style.left = `${rect.left - parentRect.left}px`;
+          sugerenciasDiv.style.top = `${rect.bottom - parentRect.top}px`;
+          sugerenciasDiv.style.width = `${input.offsetWidth}px`;
+          sugerenciasDiv.style.display = "block";
+        });
+
+        document.addEventListener("click", function (e) {
+          if (!inputProducto.contains(e.target)) {
+            sugerenciasDiv.style.display = "none";
+          }
+        });
+      }
+    });
+  </script>
+  <script>
+    // Mostrar botón de scroll arriba
+    document.addEventListener('DOMContentLoaded', function () {
+      const btn = document.getElementById('irArriba');
+      if (!btn) return;
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 200) {
+          btn.style.display = "block";
+        } else {
+          btn.style.display = "none";
+        }
+      });
+    });
+  </script>
+</body>
+</html>
