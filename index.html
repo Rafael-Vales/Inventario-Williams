@@ -1029,13 +1029,14 @@ if (!productosPorLista.general) productosPorLista.general = [];
         // 6. Total unidades
         // 7. Precio costo
         // 8. Precio por unidad
-        // 9. Ganancia por unidad
+        // 9. Ganancia por unidad (con porcentaje)
         //10. Valor total
         //11. Valor costo total
         //12. Ganancia total
         //13. Categoría
         //14. Última modificación
         //15. Acciones
+        // Construimos la fila manualmente para poder modificar la celda de ganancia por unidad:
         fila.innerHTML = `
           <td><input type="checkbox" class="producto-check" data-index="${realIndex}" tabindex="0"></td>
           <td>${p.producto}</td>
@@ -1045,12 +1046,21 @@ if (!productosPorLista.general) productosPorLista.general = [];
           <td style="background-color:${color};">${totalUnidades}</td>
           <td>${(precioCosto || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
           <td>${precioUnidad.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
-          <td>${gananciaPorUnidad.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
+          <td></td>
           <td>${valorTotal.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
           <td>${valorCostoTotal.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
           <td>${gananciaTotal.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
           <td>${p.categoria || '-'}</td>
         `;
+        // Ahora, reemplazamos el contenido de la celda de ganancia por unidad (índice 8) por el nuevo formato con porcentaje en dos líneas:
+        const celdas = fila.querySelectorAll("td");
+        const porcentaje = precioCosto > 0 ? (gananciaPorUnidad / precioCosto) * 100 : 0;
+        if (celdas[8]) {
+          celdas[8].innerHTML = `
+            <div style="font-size: 0.8em; color: #888;">${porcentaje.toFixed(0)}%</div>
+            <div>${gananciaPorUnidad.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</div>
+          `;
+        }
         // Nueva celda: Última modificación (con estilo condicional usando clases reutilizables)
         const celdaUltimaMod = fila.insertCell();
         // Limpiar posibles clases previas
@@ -1100,12 +1110,13 @@ if (!productosPorLista.general) productosPorLista.general = [];
         celdaAcciones.appendChild(botonEliminar);
         fila.appendChild(celdaAcciones);
         // Resaltar la celda de ganancia por unidad si corresponde
-        const celdas = fila.querySelectorAll("td");
+        // Redefinir celdas aquí si es necesario
+        const celdas2 = fila.querySelectorAll("td");
         // El índice de ganancia por unidad es 8 (empezando en 0)
         if (precioCosto > 0 && gananciaPorUnidad / precioCosto > 0.39) {
-          if (celdas[8]) {
-            celdas[8].style.backgroundColor = "#c8f7c5";
-            celdas[8].style.fontWeight = "bold";
+          if (celdas2[8]) {
+            celdas2[8].style.backgroundColor = "#c8f7c5";
+            celdas2[8].style.fontWeight = "bold";
           }
         }
         const checkInput = fila.querySelector('.producto-check');
@@ -1965,37 +1976,17 @@ if (!productosPorLista.general) productosPorLista.general = [];
             sugerenciasDiv.appendChild(div);
           });
           // Posicionamiento relativo al input usando offsetParent
-          const parent = input.offsetParent;
-          const rect = input.getBoundingClientRect();
-          const parentRect = parent ? parent.getBoundingClientRect() : { top: 0, left: 0 };
-          sugerenciasDiv.style.position = "absolute";
-          sugerenciasDiv.style.left = `${rect.left - parentRect.left}px`;
-          sugerenciasDiv.style.top = `${rect.bottom - parentRect.top}px`;
-          sugerenciasDiv.style.width = `${input.offsetWidth}px`;
-          sugerenciasDiv.style.display = "block";
+          // (Opcional: implementar posicionamiento si necesario)
         });
-
+        // Cerrar sugerencias si se hace clic afuera
         document.addEventListener("click", function (e) {
-          if (!inputProducto.contains(e.target)) {
+          if (!inputProducto.contains(e.target) && !sugerenciasDiv.contains(e.target)) {
             sugerenciasDiv.style.display = "none";
           }
         });
       }
     });
   </script>
-  <script>
-    // Mostrar botón de scroll arriba
-    document.addEventListener('DOMContentLoaded', function () {
-      const btn = document.getElementById('irArriba');
-      if (!btn) return;
-      window.addEventListener('scroll', () => {
-        if (window.scrollY > 200) {
-          btn.style.display = "block";
-        } else {
-          btn.style.display = "none";
-        }
-      });
-    });
-  </script>
+
 </body>
 </html>
