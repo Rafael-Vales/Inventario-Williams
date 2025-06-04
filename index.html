@@ -1285,7 +1285,7 @@ if (!productosPorLista.general) productosPorLista.general = [];
           check.addEventListener('change', function () {
             lista[realIndex].seleccionado = this.checked;
             const filtroActual = document.getElementById("filtroCategoria")?.value || "";
-            firebaseSet(firebaseRef(firebaseDB, "productosPorLista"), productosPorLista).then(() => {
+            firebaseSet(firebaseRef("productosPorLista"), productosPorLista).then(() => {
               if (filtroActual) {
                 localStorage.setItem("filtroCategoriaPersistente", filtroActual);
               }
@@ -1369,7 +1369,7 @@ if (!productosPorLista.general) productosPorLista.general = [];
         // fallback
         const eliminado = lista[index];
         lista.splice(index, 1);
-        firebaseSet(firebaseRef(firebaseDB, "productosPorLista"), productosPorLista);
+        firebaseSet(firebaseRef("productosPorLista"), productosPorLista);
         actualizarTabla();
         agregarHistorial('baja', eliminado);
       }
@@ -1655,7 +1655,7 @@ if (!productosPorLista.general) productosPorLista.general = [];
               // vencimiento: p.vencimiento || null,
               seleccionado: !!p.seleccionado
             }));
-            firebaseSet(firebaseRef(firebaseDB, "productosPorLista"), productosPorLista)
+            firebaseSet(firebaseRef("productosPorLista"), productosPorLista)
               .then(() => {
                 console.log("✅ Datos guardados correctamente en Firebase.");
               })
@@ -1667,7 +1667,7 @@ if (!productosPorLista.general) productosPorLista.general = [];
             actualizado = true;
           } else if (typeof data === "object" && "productosPorLista" in data) {
             productosPorLista = data.productosPorLista;
-            firebaseSet(firebaseRef(firebaseDB, "productosPorLista"), productosPorLista);
+            firebaseSet(firebaseRef("productosPorLista"), productosPorLista);
             mostrarAviso("✅ Archivo importado correctamente");
             actualizado = true;
           }
