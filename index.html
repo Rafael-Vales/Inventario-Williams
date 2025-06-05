@@ -9,6 +9,42 @@
   <!-- <link rel="manifest" href="manifest.json"> -->
   <meta name="theme-color" content="#ffffff">
   <style>
+    .encabezado-fijo {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--color-form-bg);
+      padding: 12px 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      border-bottom: 1px solid var(--color-form-borde);
+    }
+
+    .encabezado-fijo h1 {
+      margin: 0 0 6px 0;
+      font-size: 20px;
+    }
+
+    .info-resumen {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .info-resumen span {
+      font-size: 14px;
+    }
+
+    .btn-agregar {
+      background-color: var(--color-primario);
+      border: none;
+      color: white;
+      padding: 6px 10px;
+      font-size: 14px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
     /* Modern popup card for scanned product */
     #productoEscaneado {
       position: fixed;
@@ -529,23 +565,35 @@
     Cargando inventario...
   </div>
 
-  <!-- Novedades de la última actualización (colapsable al pie) -->
-  <details id="novedadesActualizacion" style="max-width: 600px; margin: 40px auto 80px auto; background: #fff5f8; border: 1px solid #ffc9da; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); font-family: sans-serif;">
-    <summary style="padding: 16px; cursor: pointer; color: #c94f7c; font-weight: bold; font-size: 1.1em;">🆕 Ver novedades de la última actualización</summary>
-    <div style="padding: 0 16px 16px 16px; font-size: 0.95em; color: #444;">
-      <ul style="padding-left: 20px; margin-top: 10px;">
-        <li>🔍 Escaneo de productos con cámara (código de barras)</li>
-        <li>📱 Compatible con celular y tablet</li>
-        <li>✏️ Edición rápida desde escaneo</li>
-        <li>🆕 Carga de producto si no existe</li>
-        <li>✅ Corrección de errores y mejoras visuales</li>
-      </ul>
+  <!-- Encabezado fijo principal (dentro de body y antes de <main>) -->
+  <header class="encabezado-fijo">
+    <h1>Inventario Williams</h1>
+    <div class="info-resumen">
+      <span id="categoriaActivaResumen">📦 Categoría: Todas</span>
+      <span id="resumenProductosVisibles">🧾 Mostrando: 0 productos</span>
+      <button onclick="mostrarFormulario()" class="btn-agregar">➕ Agregar</button>
     </div>
-  </details>
+  </header>
+
 
   <div style="text-align: center; margin-bottom: 20px;">
-    <h1 style="margin-bottom: 10px;">Inventario Williams</h1>
+    <!-- <h1 style="margin-bottom: 10px;">Inventario Williams</h1> -->
   </div>
+  <script>
+    // Mostrar el formulario de producto (para el botón "Agregar" del encabezado fijo)
+    function mostrarFormulario() {
+      const form = document.getElementById("formProducto");
+      if (form) {
+        form.style.display = "";
+        form.scrollIntoView({ behavior: "smooth" });
+        form.classList.add("anim-agregar");
+        setTimeout(() => form.classList.remove("anim-agregar"), 400);
+        // Lleva el foco al primer campo
+        document.getElementById('producto')?.focus();
+      }
+    }
+    window.mostrarFormulario = mostrarFormulario;
+  </script>
 
   <div id="resumenInventario" style="display: none; background: var(--color-form-bg); border-radius: 8px; padding: 12px 18px; box-shadow: 0 1px 6px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; font-size: 16px; color: var(--color-primario);">
     <strong>Resumen de Inventario:</strong>
@@ -787,15 +835,14 @@
   </script>
   <script>
     // =================== Variables principales ===================
-    // =================== Variables principales ===================
 let productosPorLista = {};
 if (!productosPorLista || typeof productosPorLista !== 'object') {
   productosPorLista = { general: [] };
 }
 if (!productosPorLista.general) productosPorLista.general = [];
+let productosFiltrados = []; // Definir productosFiltrados globalmente para uso seguro
     const form = document.getElementById('formProducto');
     const tabla = document.getElementById('tablaProductos');
-    // let productos = [];
     // =================== Gestión de categorías ===================
     let categorias = new Set();
 
@@ -952,22 +999,30 @@ if (!productosPorLista.general) productosPorLista.general = [];
     }
 
     // =================== Actualizar tabla y tarjetas ===================
+    function mostrarFormulario() {
+      const form = document.getElementById("formProducto");
+      if (form) {
+        form.style.display = "";
+        form.scrollIntoView({ behavior: "smooth" });
+        form.classList.add("anim-agregar");
+        setTimeout(() => form.classList.remove("anim-agregar"), 400);
+        document.getElementById('producto')?.focus();
+      }
+    }
+    window.mostrarFormulario = mostrarFormulario;
+
     function actualizarTabla() {
-      // Agrupación y comentarios para mayor claridad
-      guardarTitulos(); // Asegura encabezados actualizados antes de pintar filas
-      tabla.innerHTML = '';
-      const fragment = document.createDocumentFragment();
+      // --- Mantener filtro de categoría seleccionado ---
+      const filtroCategoriaInput = document.getElementById('filtroCategoria');
+      const categoriaSeleccionada = filtroCategoriaInput?.value;
+      const filtroCategoriaResumen = document.getElementById("categoriaActivaResumen");
+      const resumenProductosVisibles = document.getElementById("resumenProductosVisibles");
+      const lista = productosPorLista.general || [];
       const filtro = document.getElementById('filtroColor').value;
       const filtrarSoloTildados = document.getElementById('filtroSeleccionados')?.checked;
       const textoBuscar = document.getElementById('buscador')?.value.toLowerCase();
-      // --- Mantener filtro de categoría seleccionado ---
-      // La variable filtroCategoriaInput se declara solo aquí y es utilizada localmente.
-      const filtroCategoriaInput = document.getElementById('filtroCategoria');
-      const categoriaSeleccionada = filtroCategoriaInput?.value;
-      // localStorage.setItem("filtroCategoriaPersistente", categoriaSeleccionada); // Eliminado: solo se persiste en el evento change
-      const lista = productosPorLista.general || [];
       // Eliminar filtro de vencimiento
-      const productosFiltrados = lista
+      productosFiltrados = lista
         .filter(p => {
           if (textoBuscar && !p.producto.toLowerCase().includes(textoBuscar)) return false;
           if (filtrarSoloTildados && !p.seleccionado) return false;
@@ -975,6 +1030,14 @@ if (!productosPorLista.general) productosPorLista.general = [];
           return true;
         })
         .sort((a, b) => a.producto.localeCompare(b.producto));
+      // Actualizar encabezado fijo con categoría y cantidad de productos visibles
+      if (filtroCategoriaResumen && resumenProductosVisibles) {
+        filtroCategoriaResumen.textContent = `📦 Categoría: ${categoriaSeleccionada || "Todas"}`;
+        resumenProductosVisibles.textContent = `🧾 Mostrando: ${productosFiltrados.length} productos`;
+      }
+      guardarTitulos(); // Asegura encabezados actualizados antes de pintar filas
+      tabla.innerHTML = '';
+      const fragment = document.createDocumentFragment();
 
       // --- TABLA (desktop) ---
       let totalGanancia = 0;
@@ -1919,74 +1982,4 @@ if (!productosPorLista.general) productosPorLista.general = [];
         document.getElementById("precioUnidad").value = p.precio || p.precioUnidad || "";
         document.getElementById("codigoBarrasInput").value = p.codigoBarras || "";
         // Asignar otros campos si existen
-        if (typeof p.unidadesPorCaja !== "undefined") {
-          document.getElementById("unidadesPorCaja").value = p.unidadesPorCaja || 0;
-        }
-        if (typeof p.unidadesSueltas !== "undefined") {
-          document.getElementById("unidadesSueltas").value = p.unidadesSueltas || 0;
-        }
-        if (typeof p.precioCosto !== "undefined") {
-          document.getElementById("precioCosto").value = p.precioCosto || "";
-        }
-        if (typeof p.categoria !== "undefined") {
-          document.getElementById("categoriaProducto").value = p.categoria || "";
-        }
-        if (typeof p.customColor !== "undefined") {
-          document.getElementById("colorPersonalizado").value = p.customColor || "";
-        }
-        document.getElementById("formProducto").style.display = "block";
-        document.getElementById("formProducto").scrollIntoView({ behavior: "smooth" });
-        document.getElementById("productoEscaneado")?.remove();
-      });
-    }
-    // Exponer para botón cancelar
-    window.cerrarScanner = cerrarScanner;
-  </script>
-  <script>
-    // =================== Autocompletado para input producto ===================
-    document.addEventListener('DOMContentLoaded', function () {
-      const inputProducto = document.getElementById("producto");
-      const sugerenciasDiv = document.getElementById("sugerenciasProducto");
-      if (inputProducto && sugerenciasDiv) {
-        inputProducto.addEventListener("input", function () {
-          const input = this;
-          const texto = input.value.toLowerCase();
-          if (!texto) {
-            sugerenciasDiv.style.display = "none";
-            return;
-          }
-          const lista = productosPorLista.general || [];
-          const coincidencias = [...new Set(lista
-            .filter(p => p.producto && p.producto.toLowerCase().includes(texto))
-            .map(p => p.producto))];
-          if (coincidencias.length === 0) {
-            sugerenciasDiv.style.display = "none";
-            return;
-          }
-          sugerenciasDiv.innerHTML = "";
-          coincidencias.forEach(nombre => {
-            const div = document.createElement("div");
-            div.textContent = nombre;
-            div.style.padding = "6px";
-            div.style.cursor = "pointer";
-            div.addEventListener("mousedown", () => {
-              input.value = nombre;
-              sugerenciasDiv.style.display = "none";
-            });
-            sugerenciasDiv.appendChild(div);
-          });
-          // Posicionamiento relativo al input usando offsetParent
-          // (Opcional: implementar posicionamiento si necesario)
-        });
-        // Cerrar sugerencias si se hace clic afuera
-        document.addEventListener("click", function (e) {
-          if (!inputProducto.contains(e.target) && !sugerenciasDiv.contains(e.target)) {
-            sugerenciasDiv.style.display = "none";
-          }
-        });
-      }
-    });
-  </script>
-
-</body>
-</html>
+        if (typeof p.unidadesPorCaja !== "undefined") <truncated__content/>
