@@ -1982,4 +1982,28 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
         document.getElementById("precioUnidad").value = p.precio || p.precioUnidad || "";
         document.getElementById("codigoBarrasInput").value = p.codigoBarras || "";
         // Asignar otros campos si existen
-        if (typeof p.unidadesPorCaja !== "undefined") <truncated__content/>
+        if (typeof p.unidadesPorCaja !== "undefined") {
+          document.getElementById("unidadesPorCaja").value = p.unidadesPorCaja;
+        }
+        if (typeof p.unidadesSueltas !== "undefined") {
+          document.getElementById("unidadesSueltas").value = p.unidadesSueltas;
+        }
+        if (typeof p.precioCosto !== "undefined") {
+          document.getElementById("precioCosto").value = p.precioCosto;
+        }
+        if (typeof p.customColor !== "undefined") {
+          document.getElementById("colorPersonalizado").value = p.customColor;
+        }
+        if (typeof p.categoria !== "undefined") {
+          document.getElementById("categoriaProducto").value = p.categoria;
+        }
+        // Si hay campo seleccionado
+        if (typeof p.seleccionado !== "undefined") {
+          // No hay campo de check en el form, así que ignorar
+        }
+        // Cerrar popup si existe
+        document.getElementById('productoEscaneado')?.remove();
+        // Llevar el foco al formulario
+        document.getElementById("formProducto")?.scrollIntoView({ behavior: "smooth" });
+      });
+    }
