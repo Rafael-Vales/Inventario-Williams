@@ -1914,12 +1914,20 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
     }
 
     function iniciarEscaneo(qrRegion) {
+      if (!qrRegion) return;
+
+      const config = {
+        fps: 10,
+        qrbox: 250
+      };
+
       window.qrScanner = new Html5Qrcode("qr-reader");
       Html5Qrcode.getCameras().then(devices => {
-        if (devices && devices.length) {
+        if (devices && devices.length > 0) {
+          const cameraId = devices[0].id;
           window.qrScanner.start(
-            { facingMode: "environment" },
-            { fps: 10, qrbox: 250 },
+            cameraId,
+            config,
             (decodedText) => {
               cerrarScanner();
               buscarProductoPorCodigo(decodedText);
@@ -1933,8 +1941,8 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
           cerrarScanner();
         }
       }).catch(err => {
-        console.error("Error accediendo a la cámara:", err);
-        alert("Error accediendo a la cámara: " + err.message);
+        console.error("Error al obtener cámaras:", err);
+        alert("No se pudo acceder a la cámara");
         cerrarScanner();
       });
     }
