@@ -1873,16 +1873,19 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
 
   <!-- Botón flotante y contenedor de escáner de código de barras -->
   <button id="btnEscanear" title="Escanear código de barras" style="position: fixed; bottom: 100px; right: 28px; z-index: 9999; font-size: 28px; border-radius: 50%; width: 54px; height: 54px; background: #c94f7c; color: #fff; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.13); cursor: pointer; display: flex; justify-content: center; align-items: center;">📷</button>
-
   <div id="scannerContainer" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
-    <div id="qr-reader" style="width: 300px; border-radius: 12px;"></div>
+    <div id="qr-reader" style="width: 300px;"></div>
     <button onclick="cerrarScanner()" style="margin-top: 12px;">Cancelar</button>
   </div>
+<<<<<<< HEAD
   <div id="productoEscaneado" style="display:none;"></div>
 
+=======
+>>>>>>> 0ab84c7 (a)
   <script>
-    const btnEscanear = document.getElementById("btnEscanear");
+    // =================== Inicialización del escáner de código de barras ===================
     const scannerContainer = document.getElementById("scannerContainer");
+    const btnEscanear = document.getElementById("btnEscanear");
 
     btnEscanear.addEventListener("click", () => {
       scannerContainer.style.display = "flex";
@@ -1890,12 +1893,16 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
     });
 
     function cerrarScanner() {
+      const scannerContainer = document.getElementById("scannerContainer");
       scannerContainer.style.display = "none";
       if (window.qrScanner) {
         window.qrScanner.stop().then(() => {
-          window.qrScanner.clear();
+          return window.qrScanner.clear();
+        }).then(() => {
           document.getElementById("qr-reader").innerHTML = "";
           window.qrScanner = null;
+        }).catch(err => {
+          console.error("Error cerrando escáner:", err);
         });
       }
     }
@@ -1904,13 +1911,29 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
       const qrRegion = document.getElementById("qr-reader");
       if (!qrRegion) return;
 
-      const config = { fps: 10, qrbox: 250 };
-      window.qrScanner = new Html5Qrcode("qr-reader");
+      if (window.qrScanner) {
+        window.qrScanner.clear().then(() => iniciarEscaneo(qrRegion));
+      } else {
+        iniciarEscaneo(qrRegion);
+      }
+    }
 
+    function iniciarEscaneo(qrRegion) {
+      if (!qrRegion) return;
+
+      const config = {
+        fps: 10,
+        qrbox: 250
+      };
+
+      window.qrScanner = new Html5Qrcode("qr-reader");
       Html5Qrcode.getCameras().then(devices => {
-        if (devices && devices.length) {
-          const cameraId = devices[0].id;
-          window.qrScanner.start(cameraId, config,
+        if (devices && devices.length > 0) {
+          let backCamera = devices.find(device => /back|rear|environment/i.test(device.label));
+          const cameraId = (backCamera || devices[0]).id;
+          window.qrScanner.start(
+            cameraId,
+            config,
             (decodedText) => {
               cerrarScanner();
               buscarProductoPorCodigo(decodedText);
@@ -1920,17 +1943,18 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
             }
           );
         } else {
-          alert("No se detectaron cámaras.");
+          alert("No se detectó ninguna cámara.");
           cerrarScanner();
         }
       }).catch(err => {
-        console.error("Error al acceder a cámara:", err);
+        console.error("Error al obtener cámaras:", err);
         alert("No se pudo acceder a la cámara");
         cerrarScanner();
       });
     }
 
     function buscarProductoPorCodigo(codigo) {
+<<<<<<< HEAD
       const contenedor = document.getElementById("productoEscaneado");
       if (!contenedor) return;
       const lista = (productosPorLista && productosPorLista.general) ? productosPorLista.general : [];
@@ -1968,3 +1992,76 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
       }
     }
   </script>
+=======
+      const productos = firebaseDB.ref("productosPorLista/general");
+      productos.once("value").then(snapshot => {
+        const lista = snapshot.val();
+        const clave = Object.keys(lista || {}).find(k => lista[k].codigoBarras === codigo);
+        if (clave) {
+          const p = lista[clave];
+          const tarjeta = document.createElement("div");
+          tarjeta.id = "productoEscaneado";
+          tarjeta.innerHTML = `
+            <h3>${p.nombre || p.producto || ""}</h3>
+            <p><strong>Precio:</strong> $${p.precio || p.precioUnidad || ""}</p>
+            <p><strong>Unidades:</strong> ${p.unidades || (typeof p.unidadesPorCaja !== "undefined" && typeof p.cantidadCajas !== "undefined"
+              ? ((parseInt(p.unidadesPorCaja) || 0) * (parseInt(p.cantidadCajas) || 0) + (parseInt(p.unidadesSueltas) || 0))
+              : 0)}</p>
+            <p><strong>Código:</strong> ${p.codigoBarras || ""}</p>
+            <div class="acciones">
+              <button onclick="document.getElementById('productoEscaneado').remove()">Cerrar</button>
+              <button onclick="cargarProductoEnFormulario('${clave}')">Editar</button>
+            </div>
+          `;
+          document.body.appendChild(tarjeta);
+        } else {
+          if (confirm("Código no encontrado. ¿Deseás cargarlo como nuevo producto?")) {
+            document.getElementById("codigoBarrasInput")?.focus();
+            document.getElementById("codigoBarrasInput").value = codigo;
+            document.getElementById("formProducto").scrollIntoView({ behavior: "smooth" });
+          }
+        }
+      });
+    }
+
+    // Cargar producto en formulario correctamente
+    function cargarProductoEnFormulario(clave) {
+      const ref = firebaseRef("productosPorLista/general/" + clave);
+      ref.once("value").then(snapshot => {
+        const p = snapshot.val();
+        // Asignar valores a los campos correctos del formulario
+        document.getElementById("producto").value = p.nombre || p.producto || "";
+        document.getElementById("cantidadCajas").value = p.cajas || p.cantidadCajas || 0;
+        document.getElementById("precioUnidad").value = p.precio || p.precioUnidad || "";
+        document.getElementById("codigoBarrasInput").value = p.codigoBarras || "";
+        // Asignar otros campos si existen
+        if (typeof p.unidadesPorCaja !== "undefined") {
+          document.getElementById("unidadesPorCaja").value = p.unidadesPorCaja;
+        }
+        if (typeof p.unidadesSueltas !== "undefined") {
+          document.getElementById("unidadesSueltas").value = p.unidadesSueltas;
+        }
+        if (typeof p.precioCosto !== "undefined") {
+          document.getElementById("precioCosto").value = p.precioCosto;
+        }
+        if (typeof p.customColor !== "undefined") {
+          document.getElementById("colorPersonalizado").value = p.customColor;
+        }
+        if (typeof p.categoria !== "undefined") {
+          document.getElementById("categoriaProducto").value = p.categoria;
+        }
+        // Si hay campo seleccionado
+        if (typeof p.seleccionado !== "undefined") {
+          // Marcar si estaba tildado
+          document.querySelector('#formProducto input[type="checkbox"]')?.checked = p.seleccionado;
+        }
+        // Mostrar formulario con los datos cargados
+        mostrarFormulario();
+      });
+      // Eliminar tarjeta emergente si existe
+      document.getElementById('productoEscaneado')?.remove();
+    }
+  </script>
+</body>
+</html>
+>>>>>>> 0ab84c7 (a)
