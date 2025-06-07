@@ -1878,6 +1878,7 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
     <div id="qr-reader" style="width: 300px; border-radius: 12px;"></div>
     <button onclick="cerrarScanner()" style="margin-top: 12px;">Cancelar</button>
   </div>
+  <div id="productoEscaneado" style="display:none;"></div>
 
   <script>
     const btnEscanear = document.getElementById("btnEscanear");
@@ -1927,5 +1928,43 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
         alert("No se pudo acceder a la cámara");
         cerrarScanner();
       });
+    }
+
+    function buscarProductoPorCodigo(codigo) {
+      const contenedor = document.getElementById("productoEscaneado");
+      if (!contenedor) return;
+      const lista = (productosPorLista && productosPorLista.general) ? productosPorLista.general : [];
+      const producto = lista.find(p => String(p.codigoBarras) === String(codigo));
+
+      if (producto) {
+        contenedor.innerHTML = `
+          <h3>Producto encontrado</h3>
+          <p><strong>${producto.producto}</strong></p>
+          <p>Categoría: ${producto.categoria || '-'}</p>
+          <div class="acciones">
+            <button id="cerrarProductoEsc">Cerrar</button>
+          </div>`;
+        contenedor.style.display = 'block';
+        document.getElementById('cerrarProductoEsc').addEventListener('click', () => {
+          contenedor.style.display = 'none';
+        });
+      } else {
+        contenedor.innerHTML = `
+          <h3>Producto no encontrado</h3>
+          <p>Código: ${codigo}</p>
+          <div class="acciones">
+            <button id="agregarNuevoProd">Agregar</button>
+            <button id="cancelarNuevoProd">Cancelar</button>
+          </div>`;
+        contenedor.style.display = 'block';
+        document.getElementById('agregarNuevoProd').addEventListener('click', () => {
+          contenedor.style.display = 'none';
+          document.getElementById('codigoBarrasInput').value = codigo;
+          mostrarFormulario();
+        });
+        document.getElementById('cancelarNuevoProd').addEventListener('click', () => {
+          contenedor.style.display = 'none';
+        });
+      }
     }
   </script>
