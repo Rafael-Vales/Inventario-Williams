@@ -1934,17 +1934,7 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
         ]
       };
 
-      window.qrScanner = new Html5Qrcode("qr-reader", {
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.QR_CODE,
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.UPC_A,
-          Html5QrcodeSupportedFormats.UPC_E
-        ]
-      });
+      window.qrScanner = new Html5Qrcode("qr-reader");
       Html5Qrcode.getCameras().then(devices => {
         if (devices && devices.length > 0) {
           let backCamera = devices.find(device => /back|rear|environment/i.test(device.label));
