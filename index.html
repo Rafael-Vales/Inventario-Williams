@@ -1875,20 +1875,31 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
 
   <!-- Botón flotante y contenedor de escáner de código de barras -->
   <button id="btnEscanear" title="Escanear código de barras" style="position: fixed; bottom: 100px; right: 28px; z-index: 9999; font-size: 28px; border-radius: 50%; width: 54px; height: 54px; background: #c94f7c; color: #fff; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.13); cursor: pointer; display: flex; justify-content: center; align-items: center;">📷</button>
-  <div id="scannerContainer" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
+  <div id="scannerContainer" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
     <div id="qr-reader" style="width: 300px;"></div>
     <button onclick="cerrarScanner()" style="margin-top: 12px;">Cancelar</button>
-    <!-- Popup de producto escaneado, siempre dentro del scannerContainer -->
     <div id="productoEscaneado" style="display:none;"></div>
   </div>
+  <script>
+    // Forzar ocultar el contenedor del escáner al iniciar
+    window.addEventListener("DOMContentLoaded", () => {
+      const scanner = document.getElementById("scannerContainer");
+      if (scanner) scanner.style.display = "none";
+    });
+  </script>
   <script>
     // =================== Inicialización del escáner de código de barras ===================
     const scannerContainer = document.getElementById("scannerContainer");
     const btnEscanear = document.getElementById("btnEscanear");
 
     btnEscanear.addEventListener("click", () => {
-      scannerContainer.style.display = "flex";
-      startScanner();
+      const container = document.getElementById("scannerContainer");
+      if (container) container.style.display = "flex";
+      if (document.getElementById("qr-reader")) {
+        startScanner();
+      } else {
+        console.error("No se encontró el contenedor del lector QR");
+      }
     });
 
     function cerrarScanner() {
@@ -1904,6 +1915,7 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
           console.error("Error cerrando escáner:", err);
         });
       }
+      document.getElementById("qr-reader").innerHTML = "";
     }
 
     function startScanner() {
