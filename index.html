@@ -1962,12 +1962,17 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
 
       if (producto) {
         contenedor.innerHTML = `
-          <h3>Producto encontrado</h3>
-          <p><strong>${producto.producto}</strong></p>
-          <p>Categoría: ${producto.categoria || '-'}</p>
-          <div class="acciones">
-            <button id="cerrarProductoEsc">Cerrar</button>
-          </div>`;
+    <h3>Producto encontrado</h3>
+    <p><strong>${producto.producto}</strong></p>
+    <p>Categoría: ${producto.categoria || '-'}</p>
+    <p>Unidades por caja: ${producto.unidadesPorCaja}</p>
+    <p>Cajas: ${producto.cantidadCajas}</p>
+    <p>Unidades sueltas: ${producto.unidadesSueltas}</p>
+    <p>Precio unidad: $${producto.precioUnidad}</p>
+    <p>Precio costo: $${producto.precioCosto}</p>
+    <div class="acciones">
+      <button id="cerrarProductoEsc">Cerrar</button>
+    </div>`;
         contenedor.style.display = 'block';
         document.getElementById('cerrarProductoEsc').addEventListener('click', () => {
           contenedor.style.display = 'none';
