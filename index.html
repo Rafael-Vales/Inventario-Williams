@@ -285,6 +285,8 @@
       padding: 10px;
       border-radius: 12px;
       background: #000;
+      margin: 0 auto;
+      display: block;
     }
     #irArriba {
       position: fixed;
@@ -1932,7 +1934,13 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
         ]
       };
 
-      window.qrScanner = new Html5Qrcode("qr-reader");
+      window.qrScanner = new Html5Qrcode("qr-reader", {
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.QR_CODE,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.UPC_A
+        ]
+      });
       Html5Qrcode.getCameras().then(devices => {
         if (devices && devices.length > 0) {
           let backCamera = devices.find(device => /back|rear|environment/i.test(device.label));
@@ -1970,7 +1978,12 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
           lista = Object.values(productosPorLista.general);
         }
       }
-      const producto = lista.find(p => p && String(p.codigoBarras) === String(codigo));
+      if (!lista.length) {
+        mostrarError("⚠️ Los productos aún no se cargaron. Intenta nuevamente en unos segundos.");
+        return;
+      }
+
+      const producto = lista.find(p => (p.codigoBarras || '').replace(/\s/g, '') === (codigo || '').replace(/\s/g, ''));
 
       if (producto) {
         contenedor.innerHTML = `
