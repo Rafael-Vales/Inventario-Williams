@@ -1888,6 +1888,8 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
 
     btnEscanear.addEventListener("click", () => {
       scannerContainer.style.display = "flex";
+      // Limpiar el contenido anterior del escáner antes de iniciar uno nuevo
+      document.getElementById("qr-reader").innerHTML = "";
       startScanner();
     });
 
@@ -1897,11 +1899,11 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
       if (window.qrScanner) {
         window.qrScanner.stop().then(() => {
           return window.qrScanner.clear();
-        }).then(() => {
+        }).catch(err => {
+          console.error("Error al detener o limpiar el escáner:", err);
+        }).finally(() => {
           document.getElementById("qr-reader").innerHTML = "";
           window.qrScanner = null;
-        }).catch(err => {
-          console.error("Error cerrando escáner:", err);
         });
       }
     }
@@ -1920,58 +1922,44 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
     function iniciarEscaneo(qrRegion) {
       if (!qrRegion) return;
 
-      const config = {
-        fps: 10,
-        qrbox: { width: 300, height: 200 },
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.QR_CODE,
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.UPC_A,
-          Html5QrcodeSupportedFormats.UPC_E
-        ]
-      };
-
       window.qrScanner = new Html5Qrcode("qr-reader");
       Html5Qrcode.getCameras().then(devices => {
-        // Bloque para mostrar aviso si no hay cámaras detectadas
         if (!devices || devices.length === 0) {
-          const aviso = document.createElement("div");
-          aviso.textContent = "❌ No se pudo acceder a la cámara. Asegurate de haber otorgado permisos y estar en un sitio HTTPS.";
-          aviso.style.position = "fixed";
-          aviso.style.bottom = "20px";
-          aviso.style.left = "20px";
-          aviso.style.background = "#ffe0e0";
-          aviso.style.color = "#900";
-          aviso.style.padding = "10px 16px";
-          aviso.style.borderRadius = "8px";
-          aviso.style.boxShadow = "0 2px 6px rgba(0,0,0,0.15)";
-          aviso.style.zIndex = 9999;
-          document.body.appendChild(aviso);
-          setTimeout(() => aviso.remove(), 6000);
+          mostrarError("❌ No se detectaron cámaras.");
           cerrarScanner();
           return;
         }
-        if (devices && devices.length > 0) {
-          let backCamera = devices.find(device => /back|rear|environment/i.test(device.label));
-          const cameraId = (backCamera || devices[0]).id;
-          window.qrScanner.start(
-            cameraId,
-            config,
-            (decodedText) => {
-              cerrarScanner();
-              buscarProductoPorCodigo(decodedText);
-            },
-            (errorMsg) => {
-              console.warn("Escaneo fallido:", errorMsg);
-            }
-          );
-        }
+
+        // Preferir cámara trasera si es posible
+        let backCamera = devices.find(d => /back|rear|environment/i.test(d.label));
+        const cameraId = (backCamera || devices[0]).id;
+
+        window.qrScanner.start(
+          cameraId,
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+            formatsToSupport: [
+              Html5QrcodeSupportedFormats.QR_CODE,
+              Html5QrcodeSupportedFormats.EAN_13,
+              Html5QrcodeSupportedFormats.EAN_8,
+              Html5QrcodeSupportedFormats.CODE_128,
+              Html5QrcodeSupportedFormats.CODE_39,
+              Html5QrcodeSupportedFormats.UPC_A,
+              Html5QrcodeSupportedFormats.UPC_E
+            ]
+          },
+          (decodedText) => {
+            cerrarScanner();
+            buscarProductoPorCodigo(decodedText);
+          },
+          (errorMsg) => {
+            console.warn("Escaneo fallido:", errorMsg);
+          }
+        );
       }).catch(err => {
-        console.error("Error al obtener cámaras:", err);
-        alert("No se pudo acceder a la cámara");
+        mostrarError("❌ No se pudo acceder a la cámara. Verificá los permisos y que sea HTTPS.");
         cerrarScanner();
       });
     }
@@ -1988,12 +1976,15 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
           lista = Object.values(productosPorLista.general);
         }
       }
+
       if (!lista.length) {
         mostrarError("⚠️ Los productos aún no se cargaron. Intenta nuevamente en unos segundos.");
         return;
       }
 
-      const producto = lista.find(p => (p.codigoBarras || '').replace(/\s/g, '') === (codigo || '').replace(/\s/g, ''));
+      const producto = lista.find(p =>
+        (p.codigoBarras || "").toString().trim() === codigo.trim()
+      );
 
       if (producto) {
         contenedor.innerHTML = `
