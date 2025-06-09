@@ -1970,6 +1970,7 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
     function buscarProductoPorCodigo(codigo) {
       const contenedor = document.getElementById("productoEscaneado");
       if (!contenedor) return;
+
       let lista = [];
       if (productosPorLista && productosPorLista.general) {
         if (Array.isArray(productosPorLista.general)) {
@@ -1987,17 +1988,18 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
 
       if (producto) {
         contenedor.innerHTML = `
-        <h3>Producto encontrado</h3>
-        <p><strong>${producto.producto}</strong></p>
-        <p>Categoría: ${producto.categoria || '-'}</p>
-        <p>Unidades por caja: ${producto.unidadesPorCaja}</p>
-        <p>Cajas: ${producto.cantidadCajas}</p>
-        <p>Unidades sueltas: ${producto.unidadesSueltas}</p>
-        <p>Precio unidad: $${producto.precioUnidad}</p>
-        <p>Precio costo: $${producto.precioCosto}</p>
-        <div class="acciones">
-          <button id="cerrarProductoEsc">Cerrar</button>
-        </div>`;
+          <h3>Producto encontrado</h3>
+          <p><strong>${producto.producto}</strong></p>
+          <p>Categoría: ${producto.categoria || '-'}</p>
+          <p>Unidades por caja: ${producto.unidadesPorCaja}</p>
+          <p>Cajas: ${producto.cantidadCajas}</p>
+          <p>Unidades sueltas: ${producto.unidadesSueltas}</p>
+          <p>Precio unidad: $${producto.precioUnidad}</p>
+          <p>Precio costo: $${producto.precioCosto}</p>
+          <p style="font-size: 0.9em; color: #888;">Código escaneado: ${codigo}</p>
+          <div class="acciones">
+            <button id="cerrarProductoEsc">Cerrar</button>
+          </div>`;
         contenedor.style.display = 'block';
         document.getElementById('cerrarProductoEsc').addEventListener('click', () => {
           contenedor.style.display = 'none';
@@ -2005,20 +2007,21 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
       } else {
         contenedor.innerHTML = `
           <h3>Producto no encontrado</h3>
-          <p>Código: ${codigo}</p>
+          <p>¿Deseás agregarlo al inventario?</p>
+          <p style="font-size: 0.9em; color: #888;">Código escaneado: ${codigo}</p>
           <div class="acciones">
-            <button id="agregarNuevoProd">Agregar</button>
+            <button id="agregarNuevoProd">Sí, agregar</button>
             <button id="cancelarNuevoProd">Cancelar</button>
           </div>`;
         contenedor.style.display = 'block';
         document.getElementById('agregarNuevoProd').addEventListener('click', () => {
           contenedor.style.display = 'none';
-          document.getElementById('codigoBarrasInput').value = codigo;
+          cerrarScanner();
           mostrarFormulario();
+          document.getElementById("codigoBarrasInput").value = codigo;
         });
         document.getElementById('cancelarNuevoProd').addEventListener('click', () => {
           contenedor.style.display = 'none';
         });
       }
     }
-  </script>
