@@ -1885,6 +1885,7 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
     // =================== Inicialización del escáner de código de barras ===================
     const scannerContainer = document.getElementById("scannerContainer");
     const btnEscanear = document.getElementById("btnEscanear");
+    let currentStream = null; // Para manejar cierre de cámara en BarcodeDetector
 
     btnEscanear.addEventListener("click", () => {
       scannerContainer.style.display = "flex";
@@ -1906,20 +1907,69 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
           window.qrScanner = null;
         });
       }
+      if (currentStream) {
+        currentStream.getTracks().forEach(t => t.stop());
+        currentStream = null;
+        document.getElementById("qr-reader").innerHTML = "";
+      }
     }
 
     function startScanner() {
       const qrRegion = document.getElementById("qr-reader");
       if (!qrRegion) return;
-
-      if (window.qrScanner) {
-        window.qrScanner.clear().then(() => iniciarEscaneo(qrRegion));
+      if ("BarcodeDetector" in window) {
+        iniciarEscaneoNativo(qrRegion);
       } else {
-        iniciarEscaneo(qrRegion);
+        if (window.qrScanner) {
+          window.qrScanner.clear().then(() => iniciarEscaneoHtml5(qrRegion));
+        } else {
+          iniciarEscaneoHtml5(qrRegion);
+        }
+      }
+    }
+    async function iniciarEscaneoNativo(qrRegion) {
+      try {
+        const formats = [
+          "ean_13",
+          "ean_8",
+          "code_128",
+          "code_39",
+          "qr_code",
+          "upc_a",
+          "upc_e"
+        ];
+        const detector = new BarcodeDetector({ formats });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } });
+        currentStream = stream;
+        qrRegion.innerHTML = "";
+        const video = document.createElement("video");
+        video.playsInline = true;
+        video.srcObject = stream;
+        qrRegion.appendChild(video);
+        await video.play();
+
+        const scan = async () => {
+          if (!currentStream) return;
+          try {
+            const barcodes = await detector.detect(video);
+            if (barcodes.length > 0) {
+              cerrarScanner();
+              buscarProductoPorCodigo(barcodes[0].rawValue);
+              return;
+            }
+          } catch (err) {
+            console.error("Error detectando código:", err);
+          }
+          requestAnimationFrame(scan);
+        };
+        scan();
+      } catch (err) {
+        console.error("Fallo BarcodeDetector, usando html5-qrcode", err);
+        iniciarEscaneoHtml5(qrRegion);
       }
     }
 
-    function iniciarEscaneo(qrRegion) {
+    function iniciarEscaneoHtml5(qrRegion) {
       if (!qrRegion) return;
 
       window.qrScanner = new Html5Qrcode("qr-reader");
@@ -1930,7 +1980,6 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
           return;
         }
 
-        // Preferir cámara trasera si es posible
         let backCamera = devices.find(d => /back|rear|environment/i.test(d.label));
         const cameraId = (backCamera || devices[0]).id;
 
@@ -1939,7 +1988,6 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
           {
             fps: 10,
             qrbox: { width: 250, height: 250 },
-            supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
             formatsToSupport: [
               Html5QrcodeSupportedFormats.QR_CODE,
               Html5QrcodeSupportedFormats.EAN_13,
