@@ -1876,12 +1876,9 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
   <div id="scannerContainer" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
     <div id="qr-reader" style="width: 300px;"></div>
     <button onclick="cerrarScanner()" style="margin-top: 12px;">Cancelar</button>
+    <!-- Popup de producto escaneado, siempre dentro del scannerContainer -->
+    <div id="productoEscaneado" style="display:none;"></div>
   </div>
-<<<<<<< HEAD
-  <div id="productoEscaneado" style="display:none;"></div>
-
-=======
->>>>>>> 0ab84c7 (a)
   <script>
     // =================== Inicialización del escáner de código de barras ===================
     const scannerContainer = document.getElementById("scannerContainer");
@@ -1954,7 +1951,6 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
     }
 
     function buscarProductoPorCodigo(codigo) {
-
       const contenedor = document.getElementById("productoEscaneado");
       if (!contenedor) return;
       const lista = (productosPorLista && productosPorLista.general) ? productosPorLista.general : [];
@@ -1962,17 +1958,17 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
 
       if (producto) {
         contenedor.innerHTML = `
-    <h3>Producto encontrado</h3>
-    <p><strong>${producto.producto}</strong></p>
-    <p>Categoría: ${producto.categoria || '-'}</p>
-    <p>Unidades por caja: ${producto.unidadesPorCaja}</p>
-    <p>Cajas: ${producto.cantidadCajas}</p>
-    <p>Unidades sueltas: ${producto.unidadesSueltas}</p>
-    <p>Precio unidad: $${producto.precioUnidad}</p>
-    <p>Precio costo: $${producto.precioCosto}</p>
-    <div class="acciones">
-      <button id="cerrarProductoEsc">Cerrar</button>
-    </div>`;
+        <h3>Producto encontrado</h3>
+        <p><strong>${producto.producto}</strong></p>
+        <p>Categoría: ${producto.categoria || '-'}</p>
+        <p>Unidades por caja: ${producto.unidadesPorCaja}</p>
+        <p>Cajas: ${producto.cantidadCajas}</p>
+        <p>Unidades sueltas: ${producto.unidadesSueltas}</p>
+        <p>Precio unidad: $${producto.precioUnidad}</p>
+        <p>Precio costo: $${producto.precioCosto}</p>
+        <div class="acciones">
+          <button id="cerrarProductoEsc">Cerrar</button>
+        </div>`;
         contenedor.style.display = 'block';
         document.getElementById('cerrarProductoEsc').addEventListener('click', () => {
           contenedor.style.display = 'none';
