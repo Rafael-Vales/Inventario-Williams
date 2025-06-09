@@ -1920,7 +1920,16 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
 
       const config = {
         fps: 10,
-        qrbox: 250
+        qrbox: 250,
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.QR_CODE,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E
+        ]
       };
 
       window.qrScanner = new Html5Qrcode("qr-reader");
@@ -1953,8 +1962,15 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
     function buscarProductoPorCodigo(codigo) {
       const contenedor = document.getElementById("productoEscaneado");
       if (!contenedor) return;
-      const lista = (productosPorLista && productosPorLista.general) ? productosPorLista.general : [];
-      const producto = lista.find(p => String(p.codigoBarras) === String(codigo));
+      let lista = [];
+      if (productosPorLista && productosPorLista.general) {
+        if (Array.isArray(productosPorLista.general)) {
+          lista = productosPorLista.general;
+        } else if (typeof productosPorLista.general === "object") {
+          lista = Object.values(productosPorLista.general);
+        }
+      }
+      const producto = lista.find(p => p && String(p.codigoBarras) === String(codigo));
 
       if (producto) {
         contenedor.innerHTML = `
