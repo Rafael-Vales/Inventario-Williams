@@ -1885,12 +1885,9 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
     // =================== Inicialización del escáner de código de barras ===================
     const scannerContainer = document.getElementById("scannerContainer");
     const btnEscanear = document.getElementById("btnEscanear");
-    let currentStream = null; // Para manejar cierre de cámara en BarcodeDetector
 
     btnEscanear.addEventListener("click", () => {
       scannerContainer.style.display = "flex";
-      // Limpiar el contenido anterior del escáner antes de iniciar uno nuevo
-      document.getElementById("qr-reader").innerHTML = "";
       startScanner();
     });
 
@@ -1900,79 +1897,45 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
       if (window.qrScanner) {
         window.qrScanner.stop().then(() => {
           return window.qrScanner.clear();
-        }).catch(err => {
-          console.error("Error al detener o limpiar el escáner:", err);
-        }).finally(() => {
+        }).then(() => {
           document.getElementById("qr-reader").innerHTML = "";
           window.qrScanner = null;
+        }).catch(err => {
+          console.error("Error cerrando escáner:", err);
         });
-      }
-      if (currentStream) {
-        currentStream.getTracks().forEach(t => t.stop());
-        currentStream = null;
-        document.getElementById("qr-reader").innerHTML = "";
       }
     }
 
     function startScanner() {
       const qrRegion = document.getElementById("qr-reader");
       if (!qrRegion) return;
-      if ("BarcodeDetector" in window) {
-        iniciarEscaneoNativo(qrRegion);
-      } else {
-        if (window.qrScanner) {
-          window.qrScanner.clear().then(() => iniciarEscaneoHtml5(qrRegion));
-        } else {
-          iniciarEscaneoHtml5(qrRegion);
-        }
-      }
-    }
-    async function iniciarEscaneoNativo(qrRegion) {
-      try {
-        const formats = [
-          "ean_13",
-          "ean_8",
-          "code_128",
-          "code_39",
-          "qr_code",
-          "upc_a",
-          "upc_e"
-        ];
-        const detector = new BarcodeDetector({ formats });
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } });
-        currentStream = stream;
-        qrRegion.innerHTML = "";
-        const video = document.createElement("video");
-        video.playsInline = true;
-        video.srcObject = stream;
-        qrRegion.appendChild(video);
-        await video.play();
-
-        const scan = async () => {
-          if (!currentStream) return;
-          try {
-            const barcodes = await detector.detect(video);
-            if (barcodes.length > 0) {
-              cerrarScanner();
-              buscarProductoPorCodigo(barcodes[0].rawValue);
-              return;
-            }
-          } catch (err) {
-            console.error("Error detectando código:", err);
-          }
-          requestAnimationFrame(scan);
-        };
-        scan();
-      } catch (err) {
-        console.error("Fallo BarcodeDetector, usando html5-qrcode", err);
-        iniciarEscaneoHtml5(qrRegion);
-      }
-    }
-
-    function iniciarEscaneoHtml5(qrRegion) {
-      if (!qrRegion) return;
 
       window.qrScanner = new Html5Qrcode("qr-reader");
+
+      // Mensaje de "no se detectó código" después de X segundos
+      let noDetectadoTimeout = null;
+      const mostrarNoDetectadoMsg = () => {
+        // Si ya está el mensaje, no lo agregues de nuevo
+        if (document.getElementById("msgNoDetectado")) return;
+        const msg = document.createElement("div");
+        msg.id = "msgNoDetectado";
+        msg.textContent = "⏳ No se detectó ningún código. Asegurate de que el código esté visible y bien enfocado.";
+        msg.style.background = "#fffbe4";
+        msg.style.color = "#a67c00";
+        msg.style.padding = "10px 18px";
+        msg.style.borderRadius = "8px";
+        msg.style.marginTop = "18px";
+        msg.style.textAlign = "center";
+        msg.style.fontSize = "1.05em";
+        msg.style.maxWidth = "280px";
+        msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)";
+        qrRegion.parentElement.appendChild(msg);
+      };
+      const limpiarNoDetectadoMsg = () => {
+        const msg = document.getElementById("msgNoDetectado");
+        if (msg) msg.remove();
+      };
+
       Html5Qrcode.getCameras().then(devices => {
         if (!devices || devices.length === 0) {
           mostrarError("❌ No se detectaron cámaras.");
@@ -1980,14 +1943,14 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
           return;
         }
 
-        let backCamera = devices.find(d => /back|rear|environment/i.test(d.label));
-        const cameraId = (backCamera || devices[0]).id;
+        const camera = devices.find(d => /back|rear|environment/i.test(d.label)) || devices[0];
 
         window.qrScanner.start(
-          cameraId,
+          camera.id,
           {
             fps: 10,
             qrbox: { width: 250, height: 250 },
+            supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
             formatsToSupport: [
               Html5QrcodeSupportedFormats.QR_CODE,
               Html5QrcodeSupportedFormats.EAN_13,
@@ -1999,17 +1962,29 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
             ]
           },
           (decodedText) => {
+            // Código detectado, limpiar timeout y mensaje
+            if (noDetectadoTimeout) clearTimeout(noDetectadoTimeout);
+            limpiarNoDetectadoMsg();
             cerrarScanner();
             buscarProductoPorCodigo(decodedText);
           },
           (errorMsg) => {
+            // No limpiar el mensaje aquí, solo log
             console.warn("Escaneo fallido:", errorMsg);
           }
-        );
+        ).then(() => {
+          // Configura el timeout para mostrar mensaje si no se detecta código en 8 segundos
+          noDetectadoTimeout = setTimeout(() => {
+            mostrarNoDetectadoMsg();
+          }, 8000);
+        });
       }).catch(err => {
-        mostrarError("❌ No se pudo acceder a la cámara. Verificá los permisos y que sea HTTPS.");
+        mostrarError("❌ No se pudo acceder a la cámara: " + err);
         cerrarScanner();
       });
+
+      // Limpiar mensaje al cerrar
+      scannerContainer.addEventListener("transitionend", limpiarNoDetectadoMsg, { once: true });
     }
 
     function buscarProductoPorCodigo(codigo) {
@@ -2044,32 +2019,9 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
           <p>Unidades sueltas: ${producto.unidadesSueltas}</p>
           <p>Precio unidad: $${producto.precioUnidad}</p>
           <p>Precio costo: $${producto.precioCosto}</p>
-          <p style="font-size: 0.9em; color: #888;">Código escaneado: ${codigo}</p>
           <div class="acciones">
-            <button id="cerrarProductoEsc">Cerrar</button>
-          </div>`;
-        contenedor.style.display = 'block';
-        document.getElementById('cerrarProductoEsc').addEventListener('click', () => {
-          contenedor.style.display = 'none';
-        });
-      } else {
-        contenedor.innerHTML = `
-          <h3>Producto no encontrado</h3>
-          <p>¿Deseás agregarlo al inventario?</p>
-          <p style="font-size: 0.9em; color: #888;">Código escaneado: ${codigo}</p>
-          <div class="acciones">
-            <button id="agregarNuevoProd">Sí, agregar</button>
-            <button id="cancelarNuevoProd">Cancelar</button>
-          </div>`;
-        contenedor.style.display = 'block';
-        document.getElementById('agregarNuevoProd').addEventListener('click', () => {
-          contenedor.style.display = 'none';
-          cerrarScanner();
-          mostrarFormulario();
-          document.getElementById("codigoBarrasInput").value = codigo;
-        });
-        document.getElementById('cancelarNuevoProd').addEventListener('click', () => {
-          contenedor.style.display = 'none';
-        });
-      }
-    }
+            <button onclick="document.getElementById('productoEscaneado').style.display='none'">Cerrar</button>
+          </div>
+        `;
+        contenedor.style.display = "block";
+      }}
