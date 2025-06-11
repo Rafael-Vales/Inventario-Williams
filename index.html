@@ -264,29 +264,41 @@
     /* Botón flotante scroll arriba: minimalista y redondo */
     /* Estilos para el contenedor del escáner de QR/barcode */
     #scannerContainer {
-      display: none;
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.9);
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
       z-index: 9999;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
+      flex-direction: column;
+      padding: 20px;
     }
 
     #qr-reader {
       width: 300px;
-      max-width: 90%;
+      max-width: 90vw;
       border: 2px solid #fff;
       padding: 10px;
       border-radius: 12px;
       background: #000;
-      margin: 0 auto;
-      display: block;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    #scannerContainer button {
+      margin-top: 16px;
+      padding: 10px 20px;
+      font-size: 15px;
+      border: none;
+      border-radius: 8px;
+      background-color: var(--color-btn-bg, #f9d3dc);
+      color: var(--color-text, #333);
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    #scannerContainer button:hover {
+      background-color: var(--color-btn-hover, #f4c1cd);
     }
     #irArriba {
       position: fixed;
@@ -1885,7 +1897,8 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
   <!-- Botón flotante y contenedor de escáner de código de barras -->
   <button id="btnEscanear" title="Escanear código de barras" style="position: fixed; bottom: 100px; right: 28px; z-index: 9999; font-size: 28px; border-radius: 50%; width: 54px; height: 54px; background: #c94f7c; color: #fff; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.13); cursor: pointer; display: flex; justify-content: center; align-items: center;">📷</button>
   <div id="scannerContainer" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
-    <div id="qr-reader" style="width: 300px;"></div>
+    <button id="cerrarScannerBtn" title="Cerrar escáner" style="position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 24px; color: white; cursor: pointer;">❌</button>
+    <div id="qr-reader" style="width: 500px;"></div>
     <button onclick="cerrarScanner()" style="margin-top: 12px;">Cancelar</button>
   </div>
 
@@ -1924,6 +1937,8 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
 
       // No se borra el innerHTML manualmente para evitar conflictos
     }
+    // Listener para el botón de cerrar escáner
+    document.getElementById("cerrarScannerBtn").addEventListener("click", cerrarScanner);
 
     function startScanner() {
       const qrRegion = document.getElementById("qr-reader");
