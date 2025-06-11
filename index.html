@@ -1878,15 +1878,14 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
 
   <!-- Botón flotante y contenedor de escáner de código de barras -->
   <button id="btnEscanear" title="Escanear código de barras" style="position: fixed; bottom: 100px; right: 28px; z-index: 9999; font-size: 28px; border-radius: 50%; width: 54px; height: 54px; background: #c94f7c; color: #fff; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.13); cursor: pointer; display: flex; justify-content: center; align-items: center;">📷</button>
-  <div id="scannerContainer" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
+  <div id="scannerContainer" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
     <div id="qr-reader" style="width: 300px;"></div>
     <button onclick="cerrarScanner()" style="margin-top: 12px;">Cancelar</button>
   </div>
-<<<<<<< HEAD
+
   <div id="productoEscaneado" style="display:none;"></div>
 
-=======
->>>>>>> 0ab84c7 (a)
+
   <script>
     // =================== Inicialización del escáner de código de barras ===================
     const scannerContainer = document.getElementById("scannerContainer");
@@ -1905,17 +1904,19 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
     function cerrarScanner() {
       const scannerContainer = document.getElementById("scannerContainer");
       scannerContainer.style.display = "none";
+
       if (window.qrScanner) {
-        window.qrScanner.stop().then(() => {
-          return window.qrScanner.clear();
-        }).then(() => {
-          document.getElementById("qr-reader").innerHTML = "";
-          window.qrScanner = null;
-        }).catch(err => {
-          console.error("Error cerrando escáner:", err);
-        });
+        window.qrScanner.stop()
+          .then(() => window.qrScanner.clear())
+          .then(() => {
+            window.qrScanner = null;
+          })
+          .catch(err => {
+            console.error("Error cerrando escáner:", err);
+          });
       }
-      document.getElementById("qr-reader").innerHTML = "";
+
+      // No se borra el innerHTML manualmente para evitar conflictos
     }
 
     function startScanner() {
@@ -2017,9 +2018,49 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
         return;
       }
 
-      // Tu código de búsqueda aquí
-      // ... (puedes agregar lógica para buscar producto por código si falta)
+      const productoEncontrado = lista.find(p => p && p.codigoBarras && p.codigoBarras === codigo);
+
+      if (productoEncontrado) {
+        contenedor.innerHTML = `
+          <h3>Producto encontrado</h3>
+          <p><strong>${productoEncontrado.producto}</strong></p>
+          <p>Categoría: ${productoEncontrado.categoria}</p>
+          <p>Unidades por caja: ${productoEncontrado.unidadesPorCaja}</p>
+          <div class="acciones">
+            <button onclick="rellenarFormularioDesdeScanner('${productoEncontrado.producto}')">Editar</button>
+            <button onclick="cerrarProductoEscaneado()">Cerrar</button>
+          </div>
+        `;
+      } else {
+        contenedor.innerHTML = `
+          <h3>Producto no encontrado</h3>
+          <p>¿Querés agregarlo al inventario?</p>
+          <div class="acciones">
+            <button onclick="rellenarFormularioDesdeScanner('', '${codigo}')">Agregar</button>
+            <button onclick="cerrarProductoEscaneado()">Cerrar</button>
+          </div>
+        `;
+      }
+
+      contenedor.style.display = "block";
     }
-  </script>
+
+    function cerrarProductoEscaneado() {
+      const contenedor = document.getElementById("productoEscaneado");
+      if (contenedor) contenedor.style.display = "none";
+    }
+
+    function rellenarFormularioDesdeScanner(nombre = '', codigo = '') {
+      const form = document.getElementById("formProducto");
+      form.style.display = '';
+      form.scrollIntoView({ behavior: 'smooth' });
+      form.classList.add("anim-agregar");
+      setTimeout(() => form.classList.remove("anim-agregar"), 400);
+      document.getElementById("producto").value = nombre;
+      document.getElementById("codigoBarrasInput").value = codigo;
+      document.getElementById("producto").focus();
+      cerrarProductoEscaneado();
+    }
+      </script>
   </body>
   </html>
