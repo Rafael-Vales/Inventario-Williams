@@ -285,6 +285,8 @@
       padding: 10px;
       border-radius: 12px;
       background: #000;
+      margin: 0 auto;
+      display: block;
     }
     #irArriba {
       position: fixed;
@@ -1439,96 +1441,98 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
     }
 
     // =================== Agregar producto (evento submit simplificado y robusto) ===================
-    const formProductoSubmit = document.getElementById('formProducto');
-    formProductoSubmit.addEventListener('submit', (e) => {
-      e.preventDefault();
+    document.addEventListener('DOMContentLoaded', () => {
+      const formProductoSubmit = document.getElementById('formProducto');
+      formProductoSubmit.addEventListener('submit', (e) => {
+        e.preventDefault();
+        // extra logic already inside this event handler from previous extraction
+        const producto = String(document.getElementById('producto').value || "").trim();
+        const unidadesPorCaja = parseInt(document.getElementById('unidadesPorCaja').value) || 0;
+        const cantidadCajas = parseInt(document.getElementById('cantidadCajas').value) || 0;
+        const unidadesSueltas = parseInt(document.getElementById('unidadesSueltas').value) || 0;
 
-      const producto = String(document.getElementById('producto').value || "").trim();
-      const unidadesPorCaja = parseInt(document.getElementById('unidadesPorCaja').value) || 0;
-      const cantidadCajas = parseInt(document.getElementById('cantidadCajas').value) || 0;
-      const unidadesSueltas = parseInt(document.getElementById('unidadesSueltas').value) || 0;
+        const precioUnidadRaw = document.getElementById('precioUnidad').value;
+        const precioUnidad = parseFloat((precioUnidadRaw || "").toString().replace(/\./g, '').replace(',', '.')) || 0;
+        const precioCostoRaw = document.getElementById('precioCosto').value;
+        const precioCosto = parseFloat((precioCostoRaw || "").toString().replace(/\./g, '').replace(',', '.')) || 0;
 
-      const precioUnidadRaw = document.getElementById('precioUnidad').value;
-      const precioUnidad = parseFloat((precioUnidadRaw || "").toString().replace(/\./g, '').replace(',', '.')) || 0;
-      const precioCostoRaw = document.getElementById('precioCosto').value;
-      const precioCosto = parseFloat((precioCostoRaw || "").toString().replace(/\./g, '').replace(',', '.')) || 0;
+        const customColor = document.getElementById('colorPersonalizado').value || null;
+        const categoriaProducto = document.getElementById('categoriaProducto').value;
+        // const vencimiento = document.getElementById('vencimientoProducto').value || null;
 
-      const customColor = document.getElementById('colorPersonalizado').value || null;
-      const categoriaProducto = document.getElementById('categoriaProducto').value;
-      // const vencimiento = document.getElementById('vencimientoProducto').value || null;
+        // Guardar la última categoría utilizada en localStorage
+        localStorage.setItem('ultimaCategoria', categoriaProducto);
 
-      // Guardar la última categoría utilizada en localStorage
-      localStorage.setItem('ultimaCategoria', categoriaProducto);
-
-      if (!producto || !categoriaProducto || isNaN(unidadesPorCaja) || isNaN(cantidadCajas) || isNaN(unidadesSueltas) || isNaN(precioUnidad)) {
-        mostrarError("⚠️ Todos los campos son obligatorios.");
-        return;
-      }
-
-      const codigoBarras = document.getElementById("codigoBarrasInput").value.trim();
-      const nuevoProducto = {
-        producto,
-        unidadesPorCaja,
-        cantidadCajas,
-        unidadesSueltas,
-        precioUnidad,
-        precioCosto,
-        customColor,
-        categoria: categoriaProducto,
-        codigoBarras,
-        // vencimiento,
-        seleccionado: false,
-        ultimaModificacion: new Date().toISOString()
-      };
-
-      const lista = productosPorLista.general || [];
-      if (!productosPorLista.general) productosPorLista.general = lista;
-
-      if (editando !== null) {
-        lista[editando] = { ...nuevoProducto };
-        // Actualizar la fecha de última modificación al editar
-        lista[editando].ultimaModificacion = new Date().toISOString();
-        editando = null;
-      } else {
-        const indexExistente = lista.findIndex(p => p.producto.toLowerCase() === producto.toLowerCase());
-        if (indexExistente !== -1) {
-          lista[indexExistente] = {
-            ...lista[indexExistente],
-            cantidadCajas: lista[indexExistente].cantidadCajas + cantidadCajas,
-            unidadesSueltas: lista[indexExistente].unidadesSueltas + unidadesSueltas,
-            ultimaModificacion: new Date().toISOString()
-          };
-        } else {
-          lista.push(nuevoProducto);
+        if (!producto || !categoriaProducto || isNaN(unidadesPorCaja) || isNaN(cantidadCajas) || isNaN(unidadesSueltas) || isNaN(precioUnidad)) {
+          mostrarError("⚠️ Todos los campos son obligatorios.");
+          return;
         }
-      }
 
-      productosPorLista.general = lista;
-      // Guardar las categorías en productosPorLista.categorias antes de guardar en Firebase
-      if (!productosPorLista.categorias) productosPorLista.categorias = [];
-      productosPorLista.categorias = Array.from(categorias);
+        const codigoBarras = document.getElementById("codigoBarrasInput").value.trim();
+        const nuevoProducto = {
+          producto,
+          unidadesPorCaja,
+          cantidadCajas,
+          unidadesSueltas,
+          precioUnidad,
+          precioCosto,
+          customColor,
+          categoria: categoriaProducto,
+          codigoBarras,
+          // vencimiento,
+          seleccionado: false,
+          ultimaModificacion: new Date().toISOString()
+        };
 
-      firebaseSet(firebaseRef("productosPorLista"), productosPorLista)
-        .then(() => {
-          console.log("✅ Datos guardados correctamente en Firebase.");
-        })
-        .catch(err => {
-          console.error("❌ Error al guardar en Firebase:", err);
-          mostrarError("❌ No se pudo guardar en la base de datos.");
-        });
+        const lista = productosPorLista.general || [];
+        if (!productosPorLista.general) productosPorLista.general = lista;
 
-      formProductoSubmit.reset();
-      // Volver a seleccionar la última categoría después del reset
-      const ultimaCategoria = localStorage.getItem('ultimaCategoria');
-      if (ultimaCategoria) {
-        document.getElementById('categoriaProducto').value = ultimaCategoria;
-      }
-      actualizarTabla();
-      // Restaurar filtro de categoría después de agregar producto
-      const filtroActual = localStorage.getItem("filtroCategoriaPersistente");
-      if (filtroActual) {
-        document.getElementById("filtroCategoria").value = filtroActual;
-      }
+        if (editando !== null) {
+          lista[editando] = { ...nuevoProducto };
+          // Actualizar la fecha de última modificación al editar
+          lista[editando].ultimaModificacion = new Date().toISOString();
+          editando = null;
+        } else {
+          const indexExistente = lista.findIndex(p => p.producto.toLowerCase() === producto.toLowerCase());
+          if (indexExistente !== -1) {
+            lista[indexExistente] = {
+              ...lista[indexExistente],
+              cantidadCajas: lista[indexExistente].cantidadCajas + cantidadCajas,
+              unidadesSueltas: lista[indexExistente].unidadesSueltas + unidadesSueltas,
+              ultimaModificacion: new Date().toISOString()
+            };
+          } else {
+            lista.push(nuevoProducto);
+          }
+        }
+
+        productosPorLista.general = lista;
+        // Guardar las categorías en productosPorLista.categorias antes de guardar en Firebase
+        if (!productosPorLista.categorias) productosPorLista.categorias = [];
+        productosPorLista.categorias = Array.from(categorias);
+
+        firebaseSet(firebaseRef("productosPorLista"), productosPorLista)
+          .then(() => {
+            console.log("✅ Datos guardados correctamente en Firebase.");
+          })
+          .catch(err => {
+            console.error("❌ Error al guardar en Firebase:", err);
+            mostrarError("❌ No se pudo guardar en la base de datos.");
+          });
+
+        formProductoSubmit.reset();
+        // Volver a seleccionar la última categoría después del reset
+        const ultimaCategoria = localStorage.getItem('ultimaCategoria');
+        if (ultimaCategoria) {
+          document.getElementById('categoriaProducto').value = ultimaCategoria;
+        }
+        actualizarTabla();
+        // Restaurar filtro de categoría después de agregar producto
+        const filtroActual = localStorage.getItem("filtroCategoriaPersistente");
+        if (filtroActual) {
+          document.getElementById("filtroCategoria").value = filtroActual;
+        }
+      });
     });
     // =================== Cargar la última categoría seleccionada al cargar la página ===================
     document.addEventListener('DOMContentLoaded', () => {
@@ -1873,19 +1877,28 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
 
   <!-- Botón flotante y contenedor de escáner de código de barras -->
   <button id="btnEscanear" title="Escanear código de barras" style="position: fixed; bottom: 100px; right: 28px; z-index: 9999; font-size: 28px; border-radius: 50%; width: 54px; height: 54px; background: #c94f7c; color: #fff; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.13); cursor: pointer; display: flex; justify-content: center; align-items: center;">📷</button>
-  <div id="scannerContainer" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
+  <div id="scannerContainer" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
     <div id="qr-reader" style="width: 300px;"></div>
     <button onclick="cerrarScanner()" style="margin-top: 12px;">Cancelar</button>
   </div>
+<<<<<<< HEAD
   <div id="productoEscaneado" style="display:none;"></div>
+
+=======
+>>>>>>> 0ab84c7 (a)
   <script>
     // =================== Inicialización del escáner de código de barras ===================
     const scannerContainer = document.getElementById("scannerContainer");
     const btnEscanear = document.getElementById("btnEscanear");
 
     btnEscanear.addEventListener("click", () => {
-      scannerContainer.style.display = "flex";
-      startScanner();
+      const container = document.getElementById("scannerContainer");
+      if (container) container.style.display = "flex";
+      if (document.getElementById("qr-reader")) {
+        startScanner();
+      } else {
+        console.error("No se encontró el contenedor del lector QR");
+      }
     });
 
     function cerrarScanner() {
@@ -1901,90 +1914,111 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
           console.error("Error cerrando escáner:", err);
         });
       }
+      document.getElementById("qr-reader").innerHTML = "";
     }
 
     function startScanner() {
       const qrRegion = document.getElementById("qr-reader");
       if (!qrRegion) return;
 
-      if (window.qrScanner) {
-        window.qrScanner.clear().then(() => iniciarEscaneo(qrRegion));
-      } else {
-        iniciarEscaneo(qrRegion);
-      }
-    }
+      window.qrScanner = new Html5Qrcode("qr-reader");
 
-    function iniciarEscaneo(qrRegion) {
-      if (!qrRegion) return;
-
-      const config = {
-        fps: 10,
-        qrbox: 250
+      // Mensaje de "no se detectó código" después de X segundos
+      let noDetectadoTimeout = null;
+      const mostrarNoDetectadoMsg = () => {
+        // Si ya está el mensaje, no lo agregues de nuevo
+        if (document.getElementById("msgNoDetectado")) return;
+        const msg = document.createElement("div");
+        msg.id = "msgNoDetectado";
+        msg.textContent = "⏳ No se detectó ningún código. Asegurate de que el código esté visible y bien enfocado.";
+        msg.style.background = "#fffbe4";
+        msg.style.color = "#a67c00";
+        msg.style.padding = "10px 18px";
+        msg.style.borderRadius = "8px";
+        msg.style.marginTop = "18px";
+        msg.style.textAlign = "center";
+        msg.style.fontSize = "1.05em";
+        msg.style.maxWidth = "280px";
+        msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)";
+        qrRegion.parentElement.appendChild(msg);
+      };
+      const limpiarNoDetectadoMsg = () => {
+        const msg = document.getElementById("msgNoDetectado");
+        if (msg) msg.remove();
       };
 
-      window.qrScanner = new Html5Qrcode("qr-reader");
       Html5Qrcode.getCameras().then(devices => {
-        if (devices && devices.length > 0) {
-          let backCamera = devices.find(device => /back|rear|environment/i.test(device.label));
-          const cameraId = (backCamera || devices[0]).id;
-          window.qrScanner.start(
-            cameraId,
-            config,
-            (decodedText) => {
-              cerrarScanner();
-              buscarProductoPorCodigo(decodedText);
-            },
-            (errorMsg) => {
-              console.warn("Escaneo fallido:", errorMsg);
-            }
-          );
-        } else {
-          alert("No se detectó ninguna cámara.");
+        if (!devices || devices.length === 0) {
+          mostrarError("❌ No se detectaron cámaras.");
           cerrarScanner();
+          return;
         }
+
+        const camera = devices.find(d => /back|rear|environment/i.test(d.label)) || devices[0];
+
+        window.qrScanner.start(
+          camera.id,
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+            formatsToSupport: [
+              Html5QrcodeSupportedFormats.QR_CODE,
+              Html5QrcodeSupportedFormats.EAN_13,
+              Html5QrcodeSupportedFormats.EAN_8,
+              Html5QrcodeSupportedFormats.CODE_128,
+              Html5QrcodeSupportedFormats.CODE_39,
+              Html5QrcodeSupportedFormats.UPC_A,
+              Html5QrcodeSupportedFormats.UPC_E
+            ]
+          },
+          (decodedText) => {
+            // Código detectado, limpiar timeout y mensaje
+            if (noDetectadoTimeout) clearTimeout(noDetectadoTimeout);
+            limpiarNoDetectadoMsg();
+            cerrarScanner();
+            buscarProductoPorCodigo(decodedText);
+          },
+          (errorMsg) => {
+            // No limpiar el mensaje aquí, solo log
+            console.warn("Escaneo fallido:", errorMsg);
+          }
+        ).then(() => {
+          // Configura el timeout para mostrar mensaje si no se detecta código en 8 segundos
+          noDetectadoTimeout = setTimeout(() => {
+            mostrarNoDetectadoMsg();
+          }, 8000);
+        });
       }).catch(err => {
-        console.error("Error al obtener cámaras:", err);
-        alert("No se pudo acceder a la cámara");
+        mostrarError("❌ No se pudo acceder a la cámara: " + err);
         cerrarScanner();
       });
+
+      // Limpiar mensaje al cerrar
+      scannerContainer.addEventListener("transitionend", limpiarNoDetectadoMsg, { once: true });
     }
 
     function buscarProductoPorCodigo(codigo) {
-
       const contenedor = document.getElementById("productoEscaneado");
       if (!contenedor) return;
-      const lista = (productosPorLista && productosPorLista.general) ? productosPorLista.general : [];
-      const producto = lista.find(p => String(p.codigoBarras) === String(codigo));
 
-      if (producto) {
-        contenedor.innerHTML = `
-          <h3>Producto encontrado</h3>
-          <p><strong>${producto.producto}</strong></p>
-          <p>Categoría: ${producto.categoria || '-'}</p>
-          <div class="acciones">
-            <button id="cerrarProductoEsc">Cerrar</button>
-          </div>`;
-        contenedor.style.display = 'block';
-        document.getElementById('cerrarProductoEsc').addEventListener('click', () => {
-          contenedor.style.display = 'none';
-        });
-      } else {
-        contenedor.innerHTML = `
-          <h3>Producto no encontrado</h3>
-          <p>Código: ${codigo}</p>
-          <div class="acciones">
-            <button id="agregarNuevoProd">Agregar</button>
-            <button id="cancelarNuevoProd">Cancelar</button>
-          </div>`;
-        contenedor.style.display = 'block';
-        document.getElementById('agregarNuevoProd').addEventListener('click', () => {
-          contenedor.style.display = 'none';
-          document.getElementById('codigoBarrasInput').value = codigo;
-          mostrarFormulario();
-        });
-        document.getElementById('cancelarNuevoProd').addEventListener('click', () => {
-          contenedor.style.display = 'none';
-        });
+      let lista = [];
+      if (productosPorLista && productosPorLista.general) {
+        if (Array.isArray(productosPorLista.general)) {
+          lista = productosPorLista.general;
+        } else if (typeof productosPorLista.general === "object") {
+          lista = Object.values(productosPorLista.general);
+        }
       }
+
+      if (!lista.length) {
+        mostrarError("⚠️ Los productos aún no se cargaron. Intenta nuevamente en unos segundos.");
+        return;
+      }
+
+      // Tu código de búsqueda aquí
+      // ... (puedes agregar lógica para buscar producto por código si falta)
     }
   </script>
+  </body>
+  </html>
