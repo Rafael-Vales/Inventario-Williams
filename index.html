@@ -1302,7 +1302,13 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
         const btnEditar = document.createElement("button");
         btnEditar.tabIndex = 0;
         btnEditar.textContent = "Editar";
-        btnEditar.addEventListener("click", () => editar(realIndex));
+        btnEditar.addEventListener("click", () => {
+          editar(realIndex);
+          // Oculta la tarjeta y lleva el foco al formulario al iniciar la edición
+          document.getElementById("formProducto").scrollIntoView({ behavior: "smooth" });
+          const popup = document.getElementById("productoEscaneado");
+          if (popup) popup.style.display = "none";
+        });
         accionesDiv.appendChild(btnEditar);
         // Botón eliminar
         const btnEliminar = document.createElement("button");
@@ -2019,18 +2025,29 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
       }
 
       const productoEncontrado = lista.find(p => p && p.codigoBarras && p.codigoBarras === codigo);
-
+      const realIndex = lista.findIndex(p => p === productoEncontrado);
       if (productoEncontrado) {
         contenedor.innerHTML = `
-          <h3>Producto encontrado</h3>
-          <p><strong>${productoEncontrado.producto}</strong></p>
-          <p>Categoría: ${productoEncontrado.categoria}</p>
-          <p>Unidades por caja: ${productoEncontrado.unidadesPorCaja}</p>
-          <div class="acciones">
-            <button onclick="rellenarFormularioDesdeScanner('${productoEncontrado.producto}')">Editar</button>
-            <button onclick="cerrarProductoEscaneado()">Cerrar</button>
-          </div>
-        `;
+  <h3>Producto encontrado</h3>
+  <p><strong>Producto:</strong> ${productoEncontrado.producto}</p>
+  <p><strong>Categoría:</strong> ${productoEncontrado.categoria || '-'}</p>
+  <p><strong>Unidades por caja:</strong> ${productoEncontrado.unidadesPorCaja}</p>
+  <p><strong>Cajas:</strong> ${productoEncontrado.cantidadCajas}</p>
+  <p><strong>Unidades sueltas:</strong> ${productoEncontrado.unidadesSueltas}</p>
+  <p><strong>Total de unidades:</strong> ${
+    (parseInt(productoEncontrado.unidadesPorCaja) || 0) * (parseInt(productoEncontrado.cantidadCajas) || 0) + (parseInt(productoEncontrado.unidadesSueltas) || 0)
+  }</p>
+  <p><strong>Precio por unidad:</strong> $${productoEncontrado.precioUnidad}</p>
+  <p><strong>Precio de costo:</strong> $${productoEncontrado.precioCosto}</p>
+  <div class="acciones">
+    <button onclick="editar(${realIndex})">Editar</button>
+    <label style="display:flex;align-items:center;gap:6px;">
+      <input type="checkbox" ${productoEncontrado.seleccionado ? "checked" : ""} onchange="productosPorLista.general[${realIndex}].seleccionado=this.checked; firebaseSet(firebaseRef('productosPorLista'), productosPorLista).then(actualizarTabla);">
+      Tildado
+    </label>
+    <button onclick="document.getElementById('productoEscaneado').style.display='none'">Cerrar</button>
+  </div>
+`;
       } else {
         contenedor.innerHTML = `
           <h3>Producto no encontrado</h3>
