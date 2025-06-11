@@ -1493,7 +1493,8 @@ let productosFiltrados = []; // Definir productosFiltrados globalmente para uso 
           lista[editando].ultimaModificacion = new Date().toISOString();
           editando = null;
         } else {
-          const indexExistente = lista.findIndex(p => p.producto.toLowerCase() === producto.toLowerCase());
+          // Validar que p no sea undefined ni nulo ni sin propiedad producto
+          const indexExistente = lista.findIndex(p => p && p.producto && p.producto.toLowerCase() === producto.toLowerCase());
           if (indexExistente !== -1) {
             lista[indexExistente] = {
               ...lista[indexExistente],
