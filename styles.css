@@ -728,6 +728,13 @@ form {
   padding-top: 10px;
 }
 
+/* Espaciado vertical entre campos del formulario del popup */
+#popupAgregar form input,
+#popupAgregar form select,
+#popupAgregar form button {
+  margin-top: 10px;
+}
+
 #popupAgregar input#categoriaProducto {
   padding: 8px 12px;
   border-radius: 6px;
