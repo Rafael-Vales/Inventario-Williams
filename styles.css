@@ -112,7 +112,7 @@
         display: none !important;
       }
       #tarjetasProductos {
-        display: block;
+        display: block !important;
       }
     }
     /* Animación para detalles-producto en tarjetas móviles */
@@ -599,7 +599,7 @@
   }
 
   #tarjetasProductos {
-    display: none;
+    display: none !important;
   }
 }
 .formulario.form-grid {
