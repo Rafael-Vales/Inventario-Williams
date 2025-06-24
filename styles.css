@@ -516,7 +516,7 @@
       gap: 10px;
       justify-content: flex-end;
     }
-    @media (max-width: 800px) {
+@media (max-width: 800px) {
       main {
         max-width: 100%;
         padding: 0 12px;
@@ -759,16 +759,17 @@ form {
   color: #c94f7c;
 }
 
-#btnEscanear {
-  height: 60%;
-  padding: 8px 12px;
-  font-size: 16px;
-  border: 1px solid var(--color-form-borde);
-  border-radius: 6px;
-  background: var(--color-btn-bg);
-  margin-right: 8px;
-  align-self:stretch;
-}
+      #btnEscanear {
+        flex: 0 0 auto;
+        height: auto;
+        padding: 8px 12px;
+        font-size: 16px;
+        border: 1px solid var(--color-form-borde);
+        border-radius: 6px;
+        background: var(--color-btn-bg);
+        margin-right: 8px;
+        white-space: nowrap;
+      }
 
 #btnEscanear:hover {
   background: var(--color-btn-hover);
@@ -824,3 +825,19 @@ form {
   border-radius: 8px;
   pointer-events: none;
 }
+      #btnEscanearPopup {
+        flex: 0 0 auto;
+        height: auto;
+        padding: 8px 12px;
+        font-size: 16px;
+        border: 1px solid var(--color-form-borde);
+        border-radius: 6px;
+        background: var(--color-btn-bg);
+        margin-right: 8px;
+        white-space: nowrap;
+      }
+
+      #popupAgregar #codigoBarras {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
