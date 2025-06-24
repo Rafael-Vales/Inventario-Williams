@@ -826,15 +826,19 @@ form {
   pointer-events: none;
 }
       #btnEscanearPopup {
-        flex: 0 0 auto;
-        height: auto;
-        padding: 8px 12px;
-        font-size: 16px;
+        width: 42px;
+        height: 42px;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 20px;
         border: 1px solid var(--color-form-borde);
         border-radius: 6px;
         background: var(--color-btn-bg);
-        margin-right: 8px;
+        margin-left: 6px;
         white-space: nowrap;
+        flex-shrink: 0;
       }
 
       #popupAgregar #codigoBarras {
