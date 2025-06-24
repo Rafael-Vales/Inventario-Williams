@@ -380,15 +380,34 @@ function crearTarjetaProducto(p) {
   const tarjeta = document.createElement("div");
   tarjeta.className = "producto-card";
 
-  tarjeta.innerHTML = `
-    <div class="card-row"><strong>${p.producto}</strong></div>
-    <div class="card-row">Total: ${calcularTotalUnidades(p)} unidades</div>
-    <div class="card-row">Precio: ${formatearMoneda(p.precioUnidad)}</div>
-    <div class="card-row acciones">
+  const header = document.createElement("div");
+  header.className = "card-header";
+  header.innerHTML = `<strong>${p.producto}</strong> <span>⬇️</span>`;
+
+  const body = document.createElement("div");
+  body.className = "card-body";
+  body.innerHTML = `
+    <div>Total: ${calcularTotalUnidades(p)} unidades</div>
+    <div>Precio: ${formatearMoneda(p.precioUnidad)}</div>
+    <div>Unidades por caja: ${p.unidadesPorCaja || 0}</div>
+    <div>Cajas: ${p.cantidadCajas || 0}</div>
+    <div>Unidades sueltas: ${p.unidadesSueltas || 0}</div>
+    <div>Precio costo: ${formatearMoneda(p.precioCosto)}</div>
+    <div>Categoría: ${p.categoria || "-"}</div>
+    <div class="acciones">
       <button onclick="editarProductoDesdeTabla('${p.codigoBarras}')">✏️ Editar</button>
       <button onclick="eliminarProducto('${p.codigoBarras}')">🗑️ Borrar</button>
     </div>
   `;
+
+  header.addEventListener("click", () => {
+    tarjeta.classList.toggle("expanded");
+    const icono = header.querySelector("span");
+    icono.textContent = tarjeta.classList.contains("expanded") ? "⬆️" : "⬇️";
+  });
+
+  tarjeta.appendChild(header);
+  tarjeta.appendChild(body);
 
   return tarjeta;
 }
@@ -564,6 +583,16 @@ function renderizarProductos() {
     contenedorTabla.appendChild(fila);
     // El listener de cambio ahora se maneja con el atributo onchange en el HTML del checkbox
   });
+
+  // Renderizar tarjetas móviles
+  const contenedorTarjetas = document.getElementById("tarjetasProductos");
+  if (contenedorTarjetas) {
+    contenedorTarjetas.innerHTML = "";
+    filtrados.forEach(producto => {
+      const tarjeta = crearTarjetaProducto(producto);
+      contenedorTarjetas.appendChild(tarjeta);
+    });
+  }
 
   actualizarResumenInventario(filtrados);
   // Actualizar resumen de productos visibles
