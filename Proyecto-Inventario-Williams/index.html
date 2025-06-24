@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+  <title>Inventario Williams</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Loader -->
+  <div id="loader">Cargando inventario...</div>
+
+  <!-- Encabezado principal -->
+  <header class="encabezado-fijo">
+    <h1>Inventario Williams</h1>
+    <div class="info-resumen">
+      <span id="categoriaActivaResumen">📦 Categoría: Todas</span>
+      <span id="resumenProductosVisibles">🧾 Mostrando: 0 productos</span>
+      <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; margin-right: 10px;">
+        <button id="btnSugerencias" class="btn-agregar">💡 Ver sugerencias inteligentes</button>
+        <button id="btnAbrirPopup" class="btn-agregar">➕ Agregar</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Resumen de inventario -->
+  <div id="resumenInventario" style="display: none; background: var(--color-form-bg); border-radius: 8px; padding: 12px 18px; box-shadow: 0 1px 6px rgba(0,0,0,0.1); margin: 20px auto; text-align: center; font-size: 16px; color: var(--color-primario);">
+    <strong>Resumen de Inventario:</strong>
+    <span id="resumenTotalProductos" style="margin: 0 12px;">Productos: 0</span>
+    <span id="resumenTotalUnidades" style="margin: 0 12px;">Unidades: 0</span>
+    <span id="resumenValorTotal" style="margin: 0 12px;">Valor total: $0</span>
+  </div>
+
+  <!-- Botón para ver sugerencias -->
+  
+
+  <!-- Panel de sugerencias -->
+  <div id="panelSugerencias" style="display: none; background: var(--color-form-bg); border: 1px solid var(--color-form-borde); padding: 18px; margin-top: 32px; border-radius: 10px; max-width: 900px; margin-left: auto; margin-right: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+    <h3 style="margin-top: 0; color: var(--color-primario);">🔍 Sugerencias Inteligentes</h3>
+    <ul id="listaSugerencias" style="list-style: none; padding-left: 0;"></ul>
+  </div>
+
+  <!-- Contenedor principal -->
+  <main id="contenido" style="display: none;">
+    <!-- Formulario de productos -->
+    <form id="formProducto" class="formulario form-grid">
+      <button id="btnEscanear" title="Escanear código de barras">📷</button>
+      <div class="grupo-input">
+        <input type="text" id="codigoBarras" placeholder="Código de Barras" />
+      </div>
+
+      <div class="grupo-input">
+        <input type="text" id="producto" required placeholder="Nombre del Producto" />
+      </div>
+
+      <div class="grupo-input">
+        <input type="number" id="unidadesPorCaja" min="0" placeholder="Unidades por Caja/Bulto" />
+      </div>
+
+      <div class="grupo-input">
+        <input type="number" id="cajas" min="0" placeholder="Cantidad de Cajas" />
+      </div>
+
+      <div class="grupo-input">
+        <input type="number" id="unidadesSueltas" min="0" placeholder="Unidades Sueltas" />
+      </div>
+
+      <div class="grupo-input">
+        <input type="number" id="precioCosto" min="0" step="0.01" placeholder="Precio de Costo" />
+      </div>
+
+      <div class="grupo-input">
+        <input type="number" id="precioPorUnidad" min="0" step="0.01" placeholder="Precio por Unidad" />
+      </div>
+
+      <div class="grupo-input">
+        <input list="listaCategoriasFormulario" id="categoriaProducto" placeholder="Seleccionar categoría" required />
+        <datalist id="listaCategoriasFormulario"></datalist>
+      </div>
+
+      <button type="submit" class="btn-guardar">Guardar</button>
+
+      <div id="nuevaCategoriaWrapper" style="margin-top: 10px; display: flex; gap: 8px; align-items: center;">
+        <input type="text" id="nuevaCategoria" placeholder="Categoría" style="flex: 1;" />
+        <button type="button" id="btnAgregarCategoria">➕</button>
+        <button type="button" id="btnEliminarCategoria">🗑️</button>
+      </div>
+    </form>
+
+    <details open class="section" style="background: var(--color-form-bg); border: 1px solid var(--color-form-borde); border-radius: 8px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); max-width: 1100px; margin: 20px auto;">
+      <summary style="cursor: pointer; font-weight: bold; color: var(--color-primario); font-size: 16px;">Filtros</summary>
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 12px;">
+        <label for="filtroColor">Color:</label>
+        <select id="filtroColor" onchange="actualizarTabla()">
+          <option value="">Todos</option>
+          <option value="red">Rojo</option>
+          <option value="yellow">Amarillo</option>
+          <option value="green">Verde</option>
+        </select>
+
+        <label for="filtroCategoriaInput">Categoría:</label>
+        <input list="listaCategoriasFiltro" id="filtroCategoriaInput" placeholder="Todas las categorías..." class="input-categoria" />
+        <datalist id="listaCategoriasFiltro">
+          <option value="">Todas</option>
+        </datalist>
+
+        <label>
+          <input type="checkbox" id="filtroSeleccionados"> Solo tildados
+        </label>
+        <button type="button" id="btnDeseleccionar">Deseleccionar todos</button>
+
+        <input type="text" id="buscador" placeholder="Buscar producto..." oninput="actualizarTabla()" style="flex-grow: 1;">
+
+        <div id="historialBusqueda" style="position: absolute; background: #fff; border: 1px solid #ccc; max-height: 150px; overflow-y: auto; display: none; z-index: 1000;"></div>
+      </div>
+    </details>
+
+    <!-- Tabla de productos -->
+    <div class="tabla-contenedor">
+      <table >
+        <thead>
+          <tr>
+            <th tabindex="0"></th>
+            <th tabindex="0">Producto</th>
+            <th tabindex="0">Unidades por caja/bulto</th>
+            <th tabindex="0">Cajas/Bultos</th>
+            <th tabindex="0">Unidades sueltas</th>
+            <th tabindex="0">Total de unidades</th>
+            <th tabindex="0">Precio de costo</th>
+            <th tabindex="0">Precio por unidad</th>
+            <th tabindex="0">Ganancia por unidad</th>
+            <th tabindex="0">Valor total</th>
+            <th tabindex="0">Valor costo total</th>
+            <th tabindex="0">Ganancia total</th>
+            <th tabindex="0">Categoría</th>
+            <th tabindex="0">Última modificación</th>
+            <th tabindex="0">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tablaProductos" class="productos-tbody">
+          
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Controles de exportación -->
+    <div class="exportar-section">
+      <input type="file" id="archivoJSON" accept=".json" onchange="importarJSON()" hidden />
+      <button onclick="exportarExcel()">Excel</button>
+      <button onclick="window.print()">Imprimir</button>
+      <button onclick="exportarBackup()">Backup</button>
+      <button onclick="exportarExcelAPDF()">PDF</button>
+    </div>
+
+
+  <!-- Overlay para fondo oscuro del popup -->
+  <div id="overlayAgregar" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999;"></div>
+  <!-- Popup Agregar Producto -->
+  <div id="popupAgregar" class="popupagregar" style="display: none;">
+    <div class="popup-contenido">
+      <button id="btnCerrarPopup" class="cerrar-popup">×</button>
+      <h2 id="popupTitulo"></h2>
+      <form id="formProducto">
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input type="text" id="codigoBarras" placeholder="Código de Barras" style="flex: 1;">
+          <button type="button" id="btnEscanearPopup" title="Escanear código de barras">📷</button>
+        </div>
+        <input type="text" id="producto" placeholder="Nombre del Producto" required>
+        <input type="number" id="unidadesPorCaja" placeholder="Unidades por Caja" min="0">
+        <input type="number" id="cajas" placeholder="Cantidad de Cajas" min="0">
+        <input type="number" id="unidadesSueltas" placeholder="Unidades Sueltas" min="0">
+        <input type="number" id="precioCosto" placeholder="Precio de Costo" step="0.01" min="0">
+        <input type="number" id="precioPorUnidad" placeholder="Precio por Unidad" step="0.01" min="0">
+        <input list="listaCategoriasFormulario" id="categoriaProducto" class="input-categoria" placeholder="Seleccionar categoría" required />
+        <datalist id="listaCategoriasFormulario"></datalist>
+        <button type="submit">Guardar</button>
+      </form>
+    </div>
+  </div>
+
+  </main>
+
+  <!-- Escáner de código -->
+  
+  <div id="scannerContainer" style="display: none;">
+    
+    <div id="qr-reader"></div>
+    <button id="cerrarScannerBtn" onclick="cerrarScanner()">Cancelar</button>
+  </div>
+  <div id="productoEscaneado" style="display: none;"></div>
+
+  <!-- Botón flotante eliminado según instrucciones -->
+  <button id="irArriba" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })">↑</button>
+
+  <!-- Popup para asociar código escaneado a producto existente -->
+  <div id="popupAsociarCodigo" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 10000;">
+    <div style="background: white; padding: 20px; max-width: 400px; margin: 10% auto; border-radius: 12px; position: relative;">
+      <h3>Vincular código escaneado</h3>
+      <p id="codigoEscaneadoTexto" style="margin-bottom: 10px;"></p>
+      <label for="selectProductoExistente">Seleccioná un producto existente:</label>
+      <select id="selectProductoExistente" style="width: 100%; padding: 8px; margin-top: 8px;"></select>
+      <div style="margin-top: 16px; display: flex; justify-content: flex-end; gap: 8px;">
+        <button onclick="cerrarPopupAsociar()">Cancelar</button>
+        <button onclick="confirmarAsociacionCodigo()">Vincular</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Librerías externas -->
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-database-compat.js"></script>
+  <script src="https://unpkg.com/html2pdf.js/dist/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+</script>
+  <!-- Scripts locales -->
+  <script src="firebase.js"></script>
+  <script src="utils.js"></script>
+  <script src="scanner.js"></script>
+  <script src="exportar.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
