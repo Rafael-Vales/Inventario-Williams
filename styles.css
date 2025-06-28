@@ -857,3 +857,8 @@ form {
         flex: 1 1 auto;
         min-width: 0;
       }
+
+.tabla-contenedor table:not(.expandido) th:not(:nth-child(1)):not(:nth-child(2)):not(:nth-child(3)):not(:nth-child(4)):not(:nth-child(5)):not(:nth-child(6)):not(:nth-child(7)):not(:nth-child(8)):not(:nth-child(9)):not(:nth-child(15)),
+.tabla-contenedor table:not(.expandido) td:not(:nth-child(1)):not(:nth-child(2)):not(:nth-child(3)):not(:nth-child(4)):not(:nth-child(5)):not(:nth-child(6)):not(:nth-child(7)):not(:nth-child(8)):not(:nth-child(9)):not(:nth-child(15)) {
+  display: none;
+}

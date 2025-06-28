@@ -594,6 +594,15 @@ function renderizarProductos() {
     });
   }
 
+  // Alternar clase expandido según localStorage
+  const tabla = document.querySelector(".tabla-contenedor table");
+  if (tabla) {
+    if (localStorage.getItem("tablaExpandida") === "true") {
+      tabla.classList.add("expandido");
+    } else {
+      tabla.classList.remove("expandido");
+    }
+  }
   actualizarResumenInventario(filtrados);
   // Actualizar resumen de productos visibles
   const resumenProductosVisibles = document.getElementById("resumenProductosVisibles");
@@ -808,3 +817,26 @@ function agregarCodigoBarras(id) {
       mostrarAviso("Error al guardar el código", "error");
     });
 }
+
+// Botón para alternar entre vista expandida y contraída de la tabla
+document.addEventListener("DOMContentLoaded", () => {
+  const contenedorTabla = document.querySelector(".tabla-contenedor");
+  if (!contenedorTabla) return;
+
+  const toggleBtn = document.createElement("button");
+  toggleBtn.textContent = localStorage.getItem("tablaExpandida") === "true"
+    ? "🔽 Contraer tabla"
+    : "🔼 Expandir tabla";
+  toggleBtn.className = "btn-agregar";
+  toggleBtn.style.marginBottom = "10px";
+
+  toggleBtn.addEventListener("click", () => {
+    const tabla = contenedorTabla.querySelector("table");
+    if (!tabla) return;
+    const expandida = tabla.classList.toggle("expandido");
+    localStorage.setItem("tablaExpandida", expandida);
+    toggleBtn.textContent = expandida ? "🔽 Contraer tabla" : "🔼 Expandir tabla";
+  });
+
+  contenedorTabla.prepend(toggleBtn);
+});
