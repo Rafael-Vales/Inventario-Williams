@@ -337,7 +337,7 @@ function crearFilaProducto(p) {
     `<td>${formatearMoneda(gananciaTotal)}</td>`,
     `<td>${p.categoria || "-"}</td>`,
     `<td>${fechaMod}</td>`,
-    `<td><button onclick="editarProductoDesdeTabla('${p.codigoBarras}')">✏️</button><button onclick="eliminarProducto('${p.codigoBarras}')">🗑️</button></td>`
+    `<td><button onclick="abrirPopupEdicion('${p.codigoBarras || p.producto.replace(/\s+/g, "_")}')">✏️</button><button onclick="eliminarProducto('${p.codigoBarras}')">🗑️</button></td>`
   ];
 
   // Ensamblar la fila: primero el checkbox, luego el resto de columnas
