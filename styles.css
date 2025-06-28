@@ -483,8 +483,9 @@
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
-      font-size: 14px;
+      font-size: 13px;
       background: var(--color-form-bg);
+      table-layout: fixed;
     }
     thead th {
       position: sticky;
@@ -678,8 +679,9 @@
   word-break: break-word;
   text-align: center;
   vertical-align: middle;
-  padding: 10px 12px;
-  min-width: 90px;
+  padding: 6px 8px;
+  font-size: 13px;
+  min-width: 60px;
   border: 1px solid var(--color-form-borde);
 }
 
@@ -726,6 +728,12 @@ form {
   flex-direction: column;
   gap: 20px;
   padding-top: 10px;
+}
+/* Espaciado entre los campos del formulario del popup agregar producto */
+
+/* Espaciado entre los campos del formulario del popup agregar producto */
+.popupagregar .popup-contenido form > * {
+  margin-bottom: 14px;
 }
 
 /* Espaciado vertical entre campos del formulario del popup */
