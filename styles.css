@@ -468,16 +468,15 @@
     }
     /* Tabla */
 .tabla-contenedor {
+  width: 126%;
+  margin-left: -13%;
+  margin-right: 10%;
   margin-bottom: 18px;
   padding: 10px 10px 5px 10px;
   overflow-x: auto;
   border: 1px solid var(--color-form-borde);
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
   border-radius: 8px;
-  width: 100%;
-  max-width: 1200px;
-  margin-left: auto;
-  margin-right: auto;
 }
     table {
       width: 100%;
@@ -534,8 +533,8 @@
       }
 
       .tabla-contenedor {
-        padding: 6px;
-        overflow-x: auto;
+        padding: 6px !important;
+        overflow-x: auto !important;
       }
 
       table {
@@ -583,9 +582,9 @@
     }
     form { border: 1px solid var(--color-form-borde); }
   
-    @media (min-width: 601px) {
+@media (min-width: 601px) {
   .tabla-contenedor {
-    display: block;
+    display: block !important;
   }
 
   table {
@@ -678,9 +677,13 @@
   word-break: break-word;
   text-align: center;
   vertical-align: middle;
-  padding: 10px 12px;
-  min-width: 90px;
+  padding: 6px 8px;
+  min-width: 70px;
   border: 1px solid var(--color-form-borde);
+}
+
+#tablaProductos {
+  font-size: 13px;
 }
 
 #tablaProductos th:first-child,
@@ -694,7 +697,6 @@
 
 form,
 .filtros-contenedor,
-.tabla-contenedor,
 form {
   width: 100%;
   max-width: 1200px;
