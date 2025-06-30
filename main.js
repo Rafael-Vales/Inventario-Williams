@@ -414,12 +414,22 @@ function crearTarjetaProducto(p) {
 
 function guardarProducto() {
   const esEdicion = productoEditando && productoEditando.codigoBarras;
-  let codigoFinal = esEdicion
-    ? productoEditando.codigoBarras
-    : document.getElementById("codigoBarras").value.trim();
-
+  // El código final puede cambiar si el usuario lo edita
+  let codigoFinal = document.getElementById("codigoBarras").value.trim();
   if (!codigoFinal) {
-    codigoFinal = Date.now().toString();
+    mostrarAviso("Código de barras inválido", "error");
+    return;
+  }
+
+  // Validación de código repetido
+  const productoExistente = productos.find(
+    p =>
+      p.codigoBarras === codigoFinal &&
+      (!productoEditando || p.codigoBarras !== productoEditando.codigoBarras)
+  );
+  if (productoExistente) {
+    mostrarAviso("Ya existe un producto con ese código de barras", "error");
+    return;
   }
 
   const producto = {
@@ -438,7 +448,15 @@ function guardarProducto() {
     return mostrarAviso("Faltan datos obligatorios", "error");
   }
 
-  const ref = firebaseRef(`productosPorLista/general/${codigoFinal}`);
+  // Nueva lógica: Si se está editando y cambió el código, eliminar el producto anterior
+  const refOriginal = productoEditando?.codigoBarras;
+  const refNuevo = codigoFinal;
+  if (productoEditando && refOriginal && refOriginal !== refNuevo) {
+    const refAnterior = firebaseRef(`productosPorLista/general/${refOriginal}`);
+    firebaseRemove(refAnterior).catch(console.warn);
+  }
+
+  const ref = firebaseRef(`productosPorLista/general/${refNuevo}`);
   firebaseSet(ref, producto)
     .then(() => {
       mostrarAviso("Producto guardado correctamente", "ok");
@@ -634,7 +652,21 @@ function abrirPopupAgregar() {
 // Guardar producto desde el formulario del popup
 function guardarProductoDesdePopup() {
   const popupForm = document.querySelector("#popupAgregar form");
-  const codigoBarras = popupForm.querySelector("#codigoBarras").value.trim() || Date.now().toString();
+  const codigoBarras = popupForm.querySelector("#codigoBarras").value.trim();
+  if (!codigoBarras) {
+    mostrarAviso("Código de barras inválido", "error");
+    return;
+  }
+  // Validación de código repetido
+  const productoExistente = productos.find(
+    p =>
+      p.codigoBarras === codigoBarras &&
+      (!productoEditando || p.codigoBarras !== productoEditando.codigoBarras)
+  );
+  if (productoExistente) {
+    mostrarAviso("Ya existe un producto con ese código de barras", "error");
+    return;
+  }
   const producto = {
     codigoBarras,
     producto: popupForm.querySelector("#producto").value.trim(),

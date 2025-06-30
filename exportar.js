@@ -44,8 +44,13 @@ function importarJSON() {
       if (typeof data !== "object" || Array.isArray(data)) {
         throw new Error("Estructura inválida");
       }
-      firebaseSet(firebaseRef("productos"), data);
-      mostrarAviso("Datos importados con éxito", "ok");
+      const ref = firebaseRef("productos");
+      firebaseGet(ref).then(snapshot => {
+        const existentes = snapshot || {};
+        const fusionados = { ...existentes, ...data };
+        firebaseSet(ref, fusionados);
+        mostrarAviso("Datos importados con éxito", "ok");
+      }).catch(mostrarError);
     } catch (error) {
       mostrarError(error);
     }
@@ -83,8 +88,13 @@ if (dropArea) {
         if (typeof data !== "object" || Array.isArray(data)) {
           throw new Error("Estructura inválida");
         }
-        firebaseSet(firebaseRef("productos"), data);
-        mostrarAviso("Datos importados exitosamente", "ok");
+        const ref = firebaseRef("productos");
+        firebaseGet(ref).then(snapshot => {
+          const existentes = snapshot || {};
+          const fusionados = { ...existentes, ...data };
+          firebaseSet(ref, fusionados);
+          mostrarAviso("Datos importados exitosamente", "ok");
+        }).catch(mostrarError);
       } catch (err) {
         mostrarError(err);
       }
