@@ -462,6 +462,7 @@ function guardarProducto() {
       mostrarAviso("Producto guardado correctamente", "ok");
       limpiarFormulario();
       productoEditando = null;
+      renderizarProductos(); // Fuerza refresco visual tras guardar
       mostrarSugerenciasInteligentes(); // Agregado
     })
     .catch((error) => {
@@ -689,6 +690,8 @@ function guardarProductoDesdePopup() {
     .then(() => {
       mostrarAviso("Producto guardado correctamente", "ok");
       popupForm.reset();
+      productoEditando = null; // Asegura que se salga del modo edición
+      renderizarProductos(); // Fuerza refresco visual tras guardar
       cerrarPopupAgregar();
       mostrarSugerenciasInteligentes(); // Agregado
     })
