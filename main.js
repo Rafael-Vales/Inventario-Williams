@@ -51,10 +51,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Manejar formulario del popup agregar producto (Firebase)
-  const popupForm = document.querySelector("#popupAgregar form");
+  const popupForm = document.getElementById("formPopupProducto");
+  console.log("🛠️ Referencia al popupForm:", popupForm);
   if (popupForm) {
     popupForm.addEventListener("submit", (e) => {
       e.preventDefault();
+      console.log("✅ Submit del popup detectado");
       guardarProductoDesdePopup();
     });
   }
@@ -633,6 +635,8 @@ function renderizarProductos() {
 
 // Definición de la función abrirPopupAgregar
 function abrirPopupAgregar() {
+  // Unificar lógica: siempre salir del modo edición al abrir el popup para agregar
+  productoEditando = null;
   const popupAgregar = document.getElementById("popupAgregar");
   const overlay = document.getElementById("overlayAgregar");
   if (popupAgregar && overlay) {
@@ -641,7 +645,7 @@ function abrirPopupAgregar() {
     popupAgregar.style.transform = "translate(-50%, -50%) scale(1)";
     overlay.style.display = "block";
     overlay.style.opacity = "1";
-    // Set popup title for "Agregar Producto" if not editing
+    // Set popup title for "Agregar Producto" si no está editando
     const tituloPopup = document.getElementById("popupTitulo");
     if (tituloPopup && !productoEditando) {
       tituloPopup.textContent = "Agregar Producto";
@@ -650,15 +654,15 @@ function abrirPopupAgregar() {
   }
 }
 
-// Guardar producto desde el formulario del popup
+// Guardar producto desde el formulario del popup (unificada con guardarProducto)
 function guardarProductoDesdePopup() {
-  const popupForm = document.querySelector("#popupAgregar form");
-  const codigoBarras = popupForm.querySelector("#codigoBarras").value.trim();
+  const popupForm = document.getElementById("formPopupProducto");
+  const codigoBarras = popupForm.elements["codigoBarras"].value.trim();
   if (!codigoBarras) {
     mostrarAviso("Código de barras inválido", "error");
     return;
   }
-  // Validación de código repetido
+
   const productoExistente = productos.find(
     p =>
       p.codigoBarras === codigoBarras &&
@@ -668,15 +672,16 @@ function guardarProductoDesdePopup() {
     mostrarAviso("Ya existe un producto con ese código de barras", "error");
     return;
   }
+
   const producto = {
     codigoBarras,
-    producto: popupForm.querySelector("#producto").value.trim(),
-    unidadesPorCaja: parseInt(popupForm.querySelector("#unidadesPorCaja").value) || 0,
-    cantidadCajas: parseInt(popupForm.querySelector("#cajas").value) || 0,
-    unidadesSueltas: parseInt(popupForm.querySelector("#unidadesSueltas").value) || 0,
-    precioUnidad: parseFloat(popupForm.querySelector("#precioPorUnidad").value) || 0,
-    precioCosto: parseFloat(popupForm.querySelector("#precioCosto").value) || 0,
-    categoria: popupForm.querySelector("#categoriaProducto").value,
+    producto: popupForm.elements["producto"].value.trim(),
+    unidadesPorCaja: parseInt(popupForm.elements["unidadesPorCaja"].value) || 0,
+    cantidadCajas: parseInt(popupForm.elements["cajas"].value) || 0,
+    unidadesSueltas: parseInt(popupForm.elements["unidadesSueltas"].value) || 0,
+    precioUnidad: parseFloat(popupForm.elements["precioPorUnidad"].value) || 0,
+    precioCosto: parseFloat(popupForm.elements["precioCosto"].value) || 0,
+    categoria: popupForm.elements["categoriaProducto"].value,
     ultimaModificacion: Date.now()
   };
 
@@ -685,15 +690,22 @@ function guardarProductoDesdePopup() {
     return;
   }
 
-  const ref = firebaseRef(`productosPorLista/general/${codigoBarras}`);
+  const refOriginal = productoEditando?.codigoBarras;
+  const refNuevo = codigoBarras;
+  if (productoEditando && refOriginal && refOriginal !== refNuevo) {
+    const refAnterior = firebaseRef(`productosPorLista/general/${refOriginal}`);
+    firebaseRemove(refAnterior).catch(console.warn);
+  }
+
+  const ref = firebaseRef(`productosPorLista/general/${refNuevo}`);
   firebaseSet(ref, producto)
     .then(() => {
       mostrarAviso("Producto guardado correctamente", "ok");
       popupForm.reset();
-      productoEditando = null; // Asegura que se salga del modo edición
-      renderizarProductos(); // Fuerza refresco visual tras guardar
+      productoEditando = null;
+      renderizarProductos();
       cerrarPopupAgregar();
-      mostrarSugerenciasInteligentes(); // Agregado
+      mostrarSugerenciasInteligentes();
     })
     .catch((error) => {
       console.error("Error al guardar desde popup:", error);
@@ -805,19 +817,19 @@ function abrirPopupEdicion(codigo) {
     tituloPopup.style.color = "";
   }
 
-  const popupForm = document.querySelector("#popupAgregar form");
+  const popupForm = document.getElementById("formPopupProducto");
   if (!popupForm) return;
 
   productoEditando = producto;
 
-  popupForm.querySelector("#codigoBarras").value = producto.codigoBarras;
-  popupForm.querySelector("#producto").value = producto.producto;
-  popupForm.querySelector("#unidadesPorCaja").value = producto.unidadesPorCaja;
-  popupForm.querySelector("#cajas").value = producto.cantidadCajas;
-  popupForm.querySelector("#unidadesSueltas").value = producto.unidadesSueltas;
-  popupForm.querySelector("#precioPorUnidad").value = producto.precioUnidad;
-  popupForm.querySelector("#precioCosto").value = producto.precioCosto;
-  popupForm.querySelector("#categoriaProducto").value = producto.categoria;
+  popupForm.elements["codigoBarras"].value = producto.codigoBarras;
+  popupForm.elements["producto"].value = producto.producto;
+  popupForm.elements["unidadesPorCaja"].value = producto.unidadesPorCaja;
+  popupForm.elements["cajas"].value = producto.cantidadCajas;
+  popupForm.elements["unidadesSueltas"].value = producto.unidadesSueltas;
+  popupForm.elements["precioPorUnidad"].value = producto.precioUnidad;
+  popupForm.elements["precioCosto"].value = producto.precioCosto;
+  popupForm.elements["categoriaProducto"].value = producto.categoria;
 
   abrirPopupAgregar();
 }

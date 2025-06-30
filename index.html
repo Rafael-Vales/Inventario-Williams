@@ -163,18 +163,18 @@
     <div class="popup-contenido">
       <button id="btnCerrarPopup" class="cerrar-popup">×</button>
       <h2 id="popupTitulo"></h2>
-      <form id="formProducto">
+      <form id="formPopupProducto">
         <div style="display: flex; gap: 8px; align-items: center;">
-          <input type="text" id="codigoBarras" placeholder="Código de Barras" style="flex: 1;">
+          <input type="text" name="codigoBarras" placeholder="Código de Barras" style="flex: 1;">
           <button type="button" id="btnEscanearPopup" class="btn-escanear" title="Escanear código de barras">📷</button>
         </div>
-        <input type="text" id="producto" placeholder="Nombre del Producto" required>
-        <input type="number" id="unidadesPorCaja" placeholder="Unidades por Caja" min="0">
-        <input type="number" id="cajas" placeholder="Cantidad de Cajas" min="0">
-        <input type="number" id="unidadesSueltas" placeholder="Unidades Sueltas" min="0">
-        <input type="number" id="precioCosto" placeholder="Precio de Costo" step="0.01" min="0">
-        <input type="number" id="precioPorUnidad" placeholder="Precio por Unidad" step="0.01" min="0">
-        <input list="listaCategoriasFormulario" id="categoriaProducto" class="input-categoria" placeholder="Seleccionar categoría" required />
+        <input type="text" name="producto" placeholder="Nombre del Producto" required>
+        <input type="number" name="unidadesPorCaja" placeholder="Unidades por Caja" min="0">
+        <input type="number" name="cajas" placeholder="Cantidad de Cajas" min="0">
+        <input type="number" name="unidadesSueltas" placeholder="Unidades Sueltas" min="0">
+        <input type="number" name="precioCosto" placeholder="Precio de Costo" step="0.01" min="0">
+        <input type="number" name="precioPorUnidad" placeholder="Precio por Unidad" step="0.01" min="0">
+        <input list="listaCategoriasFormulario" name="categoriaProducto" class="input-categoria" placeholder="Seleccionar categoría" required />
         <datalist id="listaCategoriasFormulario"></datalist>
         <button type="submit">Guardar</button>
       </form>
