@@ -17,19 +17,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const contenido = document.getElementById("contenido");
   const form = document.getElementById("formProducto");
 
-  // Cargar productos desde Firebase
+  // Cargar productos directamente desde productosPorLista/general
   firebaseOnValue(firebaseRef("productosPorLista/general"), (snapshot) => {
-    console.log("Cargando productos...", snapshot.val());
     const data = snapshot.val();
-    productos = [];
-    for (let key in data) {
-      if (data[key]) {
-        productos.push(data[key]);
-      }
+    console.log("🌐 Datos cargados desde productosPorLista/general:", data);
+
+    if (!Array.isArray(data)) {
+      console.warn("⚠️ La estructura en Firebase no es un array como se esperaba.");
+      productos = [];
+    } else {
+      productos = data.filter(p => !!p && typeof p === "object");
     }
+
+    console.log("📦 Productos procesados:", productos);
     window.productos = productos;
     sincronizarSeleccionadosDesdeLocalStorage();
     renderizarProductos();
+
     loader.style.display = "none";
     contenido.style.display = "block";
   });
@@ -415,27 +419,8 @@ function crearTarjetaProducto(p) {
 }
 
 function guardarProducto() {
-  const esEdicion = productoEditando && productoEditando.codigoBarras;
-  // El código final puede cambiar si el usuario lo edita
-  let codigoFinal = document.getElementById("codigoBarras").value.trim();
-  if (!codigoFinal) {
-    mostrarAviso("Código de barras inválido", "error");
-    return;
-  }
-
-  // Validación de código repetido
-  const productoExistente = productos.find(
-    p =>
-      p.codigoBarras === codigoFinal &&
-      (!productoEditando || p.codigoBarras !== productoEditando.codigoBarras)
-  );
-  if (productoExistente) {
-    mostrarAviso("Ya existe un producto con ese código de barras", "error");
-    return;
-  }
-
   const producto = {
-    codigoBarras: codigoFinal,
+    codigoBarras: document.getElementById("codigoBarras").value.trim(),
     producto: document.getElementById("producto").value.trim(),
     unidadesPorCaja: parseInt(document.getElementById("unidadesPorCaja").value) || 0,
     cantidadCajas: parseInt(document.getElementById("cajas").value) || 0,
@@ -450,27 +435,28 @@ function guardarProducto() {
     return mostrarAviso("Faltan datos obligatorios", "error");
   }
 
-  // Nueva lógica: Si se está editando y cambió el código, eliminar el producto anterior
-  const refOriginal = productoEditando?.codigoBarras;
-  const refNuevo = codigoFinal;
-  if (productoEditando && refOriginal && refOriginal !== refNuevo) {
-    const refAnterior = firebaseRef(`productosPorLista/general/${refOriginal}`);
-    firebaseRemove(refAnterior).catch(console.warn);
-  }
-
-  const ref = firebaseRef(`productosPorLista/general/${refNuevo}`);
-  firebaseSet(ref, producto)
-    .then(() => {
-      mostrarAviso("Producto guardado correctamente", "ok");
-      limpiarFormulario();
-      productoEditando = null;
-      renderizarProductos(); // Fuerza refresco visual tras guardar
-      mostrarSugerenciasInteligentes(); // Agregado
-    })
-    .catch((error) => {
-      console.error("Error al guardar el producto:", error);
-      mostrarAviso("Error al guardar el producto", "error");
-    });
+  firebaseOnValue(firebaseRef("productosPorLista/general"), (snapshot) => {
+    const data = snapshot.val() || [];
+    data.push(producto);
+    firebaseSet(firebaseRef("productosPorLista/general"), data)
+      .then(() => {
+        mostrarAviso("Producto agregado correctamente", "ok");
+        limpiarFormulario();
+        productoEditando = null;
+        setTimeout(() => {
+          firebaseOnValue(firebaseRef("productosPorLista/general"), (snapshot) => {
+            const data = snapshot.val() || [];
+            productos = data;
+            window.productos = productos;
+            renderizarProductos();
+          }, { onlyOnce: true });
+        }, 500);
+      })
+      .catch((error) => {
+        console.error("Error al guardar el producto:", error);
+        mostrarAviso("Error al guardar el producto", "error");
+      });
+  }, { onlyOnce: true });
 }
 
 function editarProductoDesdeTabla(codigo) {
@@ -495,10 +481,30 @@ function eliminarProducto(codigo) {
   const confirmar = confirm("¿Estás seguro de eliminar este producto?");
   if (!confirmar) return;
 
-  const ref = firebaseRef(`productosPorLista/general/${codigo}`);
-  firebaseRemove(ref)
-    .then(() => mostrarAviso("Producto eliminado", "ok"))
-    .catch(mostrarError);
+  firebaseOnValue(firebaseRef("productosPorLista/general"), (snapshot) => {
+    let data = snapshot.val() || [];
+    const index = data.findIndex(p => p && p.codigoBarras === codigo);
+    if (index === -1) {
+      mostrarAviso("No se encontró el producto", "error");
+      return;
+    }
+    data.splice(index, 1);
+    firebaseSet(firebaseRef("productosPorLista/general"), data)
+      .then(() => {
+        mostrarAviso("Producto eliminado correctamente", "ok");
+        setTimeout(() => {
+          firebaseOnValue(firebaseRef("productosPorLista/general"), (snapshot) => {
+            productos = snapshot.val() || [];
+            window.productos = productos;
+            renderizarProductos();
+          }, { onlyOnce: true });
+        }, 500);
+      })
+      .catch((error) => {
+        console.error("Error al eliminar producto:", error);
+        mostrarAviso("Error al eliminar producto", "error");
+      });
+  }, { onlyOnce: true });
 }
 
 function limpiarFormulario() {
@@ -635,8 +641,6 @@ function renderizarProductos() {
 
 // Definición de la función abrirPopupAgregar
 function abrirPopupAgregar() {
-  // Unificar lógica: siempre salir del modo edición al abrir el popup para agregar
-  productoEditando = null;
   const popupAgregar = document.getElementById("popupAgregar");
   const overlay = document.getElementById("overlayAgregar");
   if (popupAgregar && overlay) {
@@ -654,28 +658,31 @@ function abrirPopupAgregar() {
   }
 }
 
-// Guardar producto desde el formulario del popup (unificada con guardarProducto)
+// Definición de la función cerrarPopupAgregar
+function cerrarPopupAgregar() {
+  const popupAgregar = document.getElementById("popupAgregar");
+  const overlay = document.getElementById("overlayAgregar");
+  if (popupAgregar && overlay) {
+    popupAgregar.style.display = "none";
+    overlay.style.display = "none";
+  }
+}
+
 function guardarProductoDesdePopup() {
   const popupForm = document.getElementById("formPopupProducto");
+  console.log("✅ Submit del popup detectado");
+
   const codigoBarras = popupForm.elements["codigoBarras"].value.trim();
-  if (!codigoBarras) {
-    mostrarAviso("Código de barras inválido", "error");
+  const productoNombre = popupForm.elements["producto"].value.trim();
+
+  if (!productoNombre) {
+    mostrarAviso("El nombre del producto es obligatorio", "error");
     return;
   }
 
-  const productoExistente = productos.find(
-    p =>
-      p.codigoBarras === codigoBarras &&
-      (!productoEditando || p.codigoBarras !== productoEditando.codigoBarras)
-  );
-  if (productoExistente) {
-    mostrarAviso("Ya existe un producto con ese código de barras", "error");
-    return;
-  }
-
-  const producto = {
+  const nuevoProducto = {
     codigoBarras,
-    producto: popupForm.elements["producto"].value.trim(),
+    producto: productoNombre,
     unidadesPorCaja: parseInt(popupForm.elements["unidadesPorCaja"].value) || 0,
     cantidadCajas: parseInt(popupForm.elements["cajas"].value) || 0,
     unidadesSueltas: parseInt(popupForm.elements["unidadesSueltas"].value) || 0,
@@ -685,32 +692,34 @@ function guardarProductoDesdePopup() {
     ultimaModificacion: Date.now()
   };
 
-  if (!producto.producto) {
-    mostrarAviso("Faltan datos obligatorios", "error");
-    return;
-  }
+  firebaseOnValue(firebaseRef("productosPorLista/general"), (snapshot) => {
+    let data = snapshot.val() || [];
+    const index = data.findIndex(p => p && p.codigoBarras === codigoBarras);
+    if (index !== -1) {
+      data[index] = nuevoProducto;
+    } else {
+      data.push(nuevoProducto);
+    }
+    firebaseSet(firebaseRef("productosPorLista/general"), data)
+      .then(() => {
+        mostrarAviso("Producto guardado correctamente", "ok");
+        popupForm.reset();
+        productoEditando = null;
+        cerrarPopupAgregar();
 
-  const refOriginal = productoEditando?.codigoBarras;
-  const refNuevo = codigoBarras;
-  if (productoEditando && refOriginal && refOriginal !== refNuevo) {
-    const refAnterior = firebaseRef(`productosPorLista/general/${refOriginal}`);
-    firebaseRemove(refAnterior).catch(console.warn);
-  }
-
-  const ref = firebaseRef(`productosPorLista/general/${refNuevo}`);
-  firebaseSet(ref, producto)
-    .then(() => {
-      mostrarAviso("Producto guardado correctamente", "ok");
-      popupForm.reset();
-      productoEditando = null;
-      renderizarProductos();
-      cerrarPopupAgregar();
-      mostrarSugerenciasInteligentes();
-    })
-    .catch((error) => {
-      console.error("Error al guardar desde popup:", error);
-      mostrarAviso("Error al guardar el producto", "error");
-    });
+        setTimeout(() => {
+          firebaseOnValue(firebaseRef("productosPorLista/general"), (snapshot) => {
+            productos = snapshot.val() || [];
+            window.productos = productos;
+            renderizarProductos();
+          }, { onlyOnce: true });
+        }, 500);
+      })
+      .catch((error) => {
+        console.error("Error al guardar producto desde popup:", error);
+        mostrarAviso("No se pudo guardar el producto", "error");
+      });
+  }, { onlyOnce: true });
 }
 
 // Función para actualizar el seleccionado y sincronizar con localStorage
@@ -806,8 +815,10 @@ function sincronizarSeleccionadosDesdeLocalStorage() {
 
 // Nueva función: abrirPopupEdicion
 function abrirPopupEdicion(codigo) {
-  // Use fallback id for search
-  const producto = productos.find(p => (p.codigoBarras || p.producto.replace(/\s+/g, '_')) === codigo);
+  // Use fallback id for search, with additional safety checks
+  const producto = productos.find(p =>
+    p && (p.codigoBarras === codigo || (p.producto && p.producto.replace(/\s+/g, '_') === codigo))
+  );
   if (!producto) return;
 
   // Cambiar el título del popup y color antes de abrir
