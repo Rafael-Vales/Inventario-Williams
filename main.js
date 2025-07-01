@@ -295,8 +295,8 @@ function crearFilaProducto(p) {
 
   // Obtener seleccionados desde localStorage
   const seleccionados = JSON.parse(localStorage.getItem("productosSeleccionados") || "{}");
-  // Use id fallback logic
-  const id = p.codigoBarras || p.producto || Date.now().toString();
+  // Usar idUnico como id principal
+  const id = p.idUnico;
   const estaSeleccionado = !!seleccionados[id];
 
   const totalUnidades = calcularTotalUnidades(p);
@@ -329,7 +329,6 @@ function crearFilaProducto(p) {
 
   // Resto de columnas (sin el checkbox)
   const columnas = [
-    // Checkbox eliminado del array de columnas para evitar duplicado
     `<td class="show-mobile">${p.producto || ""}</td>`,
     `<td class="show-mobile">${p.unidadesPorCaja || 0}</td>`,
     `<td class="show-mobile">${p.cantidadCajas || 0}</td>`,
@@ -337,13 +336,13 @@ function crearFilaProducto(p) {
     `<td class="show-mobile" style="background: ${colorStock}; font-weight: bold;">${totalUnidades}</td>`,
     `<td>${formatearMoneda(precioCosto)}</td>`,
     `<td class="show-mobile">${formatearMoneda(precioUnidad)}</td>`,
-    `<td><div style="font-size: 0.8em; color: #888;">${porcentajeGanancia}%</div><div>${formatearMoneda(gananciaUnidad)}</div></td>`,
+    `<td><div style="font-size: 0.8em; color: #888;">${porcentajeGanancia}%</div><div style="color: ${porcentajeGanancia > 39 ? 'green' : (porcentajeGanancia < 30 ? 'red' : 'inherit')};">${formatearMoneda(gananciaUnidad)}</div></td>`,
     `<td>${formatearMoneda(valorTotal)}</td>`,
     `<td>${formatearMoneda(valorCostoTotal)}</td>`,
     `<td>${formatearMoneda(gananciaTotal)}</td>`,
     `<td>${p.categoria || "-"}</td>`,
     `<td>${fechaMod}</td>`,
-    `<td><button onclick="abrirPopupEdicion('${p.codigoBarras || p.producto.replace(/\s+/g, "_")}')">✏️</button><button onclick="eliminarProducto('${p.codigoBarras}')">🗑️</button></td>`
+    `<td><button type="button" onclick="abrirPopupEdicion('${p.idUnico}')">✏️</button><button type="button" onclick="eliminarProducto('${p.idUnico}')">🗑️</button></td>`
   ];
 
   // Ensamblar la fila: primero el checkbox, luego el resto de columnas
@@ -401,8 +400,8 @@ function crearTarjetaProducto(p) {
     <div>Precio costo: ${formatearMoneda(p.precioCosto)}</div>
     <div>Categoría: ${p.categoria || "-"}</div>
     <div class="acciones">
-      <button onclick="editarProductoDesdeTabla('${p.codigoBarras}')">✏️ Editar</button>
-      <button onclick="eliminarProducto('${p.codigoBarras}')">🗑️ Borrar</button>
+      <button type="button" onclick="editarProductoDesdeTabla('${p.idUnico}')">✏️ Editar</button>
+      <button type="button" onclick="eliminarProducto('${p.idUnico}')">🗑️ Borrar</button>
     </div>
   `;
 
@@ -428,6 +427,7 @@ function guardarProducto() {
     precioUnidad: parseFloat(document.getElementById("precioPorUnidad").value) || 0,
     precioCosto: parseFloat(document.getElementById("precioCosto").value) || 0,
     categoria: document.getElementById("categoriaProducto").value,
+    idUnico: crypto.randomUUID(),
     ultimaModificacion: Date.now()
   };
 
@@ -435,7 +435,7 @@ function guardarProducto() {
     return mostrarAviso("Faltan datos obligatorios", "error");
   }
 
-  firebaseOnValue(firebaseRef("productosPorLista/general"), (snapshot) => {
+  firebaseGet(firebaseRef("productosPorLista/general")).then(snapshot => {
     const data = snapshot.val() || [];
     data.push(producto);
     firebaseSet(firebaseRef("productosPorLista/general"), data)
@@ -456,34 +456,27 @@ function guardarProducto() {
         console.error("Error al guardar el producto:", error);
         mostrarAviso("Error al guardar el producto", "error");
       });
-  }, { onlyOnce: true });
+  }).catch(error => {
+    console.error("Error al leer productos:", error);
+    mostrarAviso("Error al leer productos", "error");
+  });
 }
 
-function editarProductoDesdeTabla(codigo) {
-  const producto = productos.find(p => p.codigoBarras === codigo);
-  if (!producto) return;
-
-  productoEditando = producto;
-
-  document.getElementById("codigoBarras").value = producto.codigoBarras;
-  document.getElementById("producto").value = producto.producto;
-  document.getElementById("unidadesPorCaja").value = producto.unidadesPorCaja;
-  document.getElementById("cajas").value = producto.cantidadCajas;
-  document.getElementById("unidadesSueltas").value = producto.unidadesSueltas;
-  document.getElementById("precioPorUnidad").value = producto.precioUnidad;
-  document.getElementById("precioCosto").value = producto.precioCosto;
-  document.getElementById("categoriaProducto").value = producto.categoria;
-
-  abrirPopupAgregar();
+function editarProductoDesdeTabla(idUnico) {
+  abrirPopupEdicion(idUnico);
 }
 
-function eliminarProducto(codigo) {
+function eliminarProducto(idUnico) {
   const confirmar = confirm("¿Estás seguro de eliminar este producto?");
   if (!confirmar) return;
 
-  firebaseOnValue(firebaseRef("productosPorLista/general"), (snapshot) => {
+  // Debug logs para depuración visual
+  console.log("🗑️ Intentando borrar producto con idUnico:", idUnico);
+  firebaseGet(firebaseRef("productosPorLista/general")).then(snapshot => {
     let data = snapshot.val() || [];
-    const index = data.findIndex(p => p && p.codigoBarras === codigo);
+    console.log("📦 Productos en Firebase:", data);
+    // Comparación robusta: p?.idUnico === idUnico
+    const index = data.findIndex(p => p?.idUnico === idUnico);
     if (index === -1) {
       mostrarAviso("No se encontró el producto", "error");
       return;
@@ -493,18 +486,21 @@ function eliminarProducto(codigo) {
       .then(() => {
         mostrarAviso("Producto eliminado correctamente", "ok");
         setTimeout(() => {
-          firebaseOnValue(firebaseRef("productosPorLista/general"), (snapshot) => {
+          firebaseGet(firebaseRef("productosPorLista/general")).then(snapshot => {
             productos = snapshot.val() || [];
             window.productos = productos;
             renderizarProductos();
-          }, { onlyOnce: true });
+          });
         }, 500);
       })
       .catch((error) => {
         console.error("Error al eliminar producto:", error);
         mostrarAviso("Error al eliminar producto", "error");
       });
-  }, { onlyOnce: true });
+  }).catch(error => {
+    console.error("Error al leer productos para eliminar:", error);
+    mostrarAviso("Error al leer productos", "error");
+  });
 }
 
 function limpiarFormulario() {
@@ -689,12 +685,13 @@ function guardarProductoDesdePopup() {
     precioUnidad: parseFloat(popupForm.elements["precioPorUnidad"].value) || 0,
     precioCosto: parseFloat(popupForm.elements["precioCosto"].value) || 0,
     categoria: popupForm.elements["categoriaProducto"].value,
+    idUnico: productoEditando?.idUnico || crypto.randomUUID(),
     ultimaModificacion: Date.now()
   };
 
-  firebaseOnValue(firebaseRef("productosPorLista/general"), (snapshot) => {
+  firebaseGet(firebaseRef("productosPorLista/general")).then(snapshot => {
     let data = snapshot.val() || [];
-    const index = data.findIndex(p => p && p.codigoBarras === codigoBarras);
+    const index = data.findIndex(p => p && p.idUnico === nuevoProducto.idUnico);
     if (index !== -1) {
       data[index] = nuevoProducto;
     } else {
@@ -706,30 +703,32 @@ function guardarProductoDesdePopup() {
         popupForm.reset();
         productoEditando = null;
         cerrarPopupAgregar();
-
         setTimeout(() => {
-          firebaseOnValue(firebaseRef("productosPorLista/general"), (snapshot) => {
+          firebaseGet(firebaseRef("productosPorLista/general")).then(snapshot => {
             productos = snapshot.val() || [];
             window.productos = productos;
             renderizarProductos();
-          }, { onlyOnce: true });
+          });
         }, 500);
       })
       .catch((error) => {
         console.error("Error al guardar producto desde popup:", error);
         mostrarAviso("No se pudo guardar el producto", "error");
       });
-  }, { onlyOnce: true });
+  }).catch(error => {
+    console.error("Error al leer productos desde popup:", error);
+    mostrarAviso("Error al leer productos", "error");
+  });
 }
 
 // Función para actualizar el seleccionado y sincronizar con localStorage
-function actualizarSeleccionado(codigoBarras, estado) {
+function actualizarSeleccionado(idUnico, estado) {
   // No modificar el objeto producto directamente
   const seleccionados = JSON.parse(localStorage.getItem("productosSeleccionados") || "{}");
   if (estado) {
-    seleccionados[codigoBarras] = true;
+    seleccionados[idUnico] = true;
   } else {
-    delete seleccionados[codigoBarras];
+    delete seleccionados[idUnico];
   }
   localStorage.setItem("productosSeleccionados", JSON.stringify(seleccionados));
   // No renderizar de nuevo la tabla completa
@@ -773,9 +772,7 @@ function sincronizarSeleccionadosDesdeLocalStorage() {
       lista.style.marginTop = "6px";
       productosAntiguos.forEach(p => {
         const item = document.createElement("li");
-        // Fallback id for edit button
-        const id = p.codigoBarras || p.producto.replace(/\s+/g, '_');
-        item.innerHTML = `<strong>${p.producto}</strong> <button onclick="abrirPopupEdicion('${id}')">✏️</button>`;
+        item.innerHTML = `<strong>${p.producto}</strong> <button onclick="abrirPopupEdicion('${p.idUnico}')">✏️</button>`;
         item.style.marginBottom = "4px";
         lista.appendChild(item);
       });
@@ -791,9 +788,7 @@ function sincronizarSeleccionadosDesdeLocalStorage() {
       lista.style.marginTop = "6px";
       sinCodigo.forEach(p => {
         const item = document.createElement("li");
-        // Fallback id for edit button
-        const id = p.codigoBarras || p.producto.replace(/\s+/g, '_');
-        item.innerHTML = `<strong>${p.producto}</strong> <button onclick="abrirPopupEdicion('${id}')">✏️</button> <button onclick="agregarCodigoBarras('${id}')">📎 Agregar código</button>`;
+        item.innerHTML = `<strong>${p.producto}</strong> <button onclick="abrirPopupEdicion('${p.idUnico}')">✏️</button> <button onclick="agregarCodigoBarras('${p.idUnico}')">📎 Agregar código</button>`;
         item.style.marginBottom = "4px";
         lista.appendChild(item);
       });
@@ -814,11 +809,8 @@ function sincronizarSeleccionadosDesdeLocalStorage() {
   }, 1000);
 
 // Nueva función: abrirPopupEdicion
-function abrirPopupEdicion(codigo) {
-  // Use fallback id for search, with additional safety checks
-  const producto = productos.find(p =>
-    p && (p.codigoBarras === codigo || (p.producto && p.producto.replace(/\s+/g, '_') === codigo))
-  );
+function abrirPopupEdicion(idUnico) {
+  const producto = productos.find(p => p && p.idUnico === idUnico);
   if (!producto) return;
 
   // Cambiar el título del popup y color antes de abrir
@@ -846,8 +838,8 @@ function abrirPopupEdicion(codigo) {
 }
 
 // Nueva función: agregarCodigoBarras
-function agregarCodigoBarras(id) {
-  const producto = productos.find(p => (p.codigoBarras || p.producto.replace(/\s+/g, '_')) === id);
+function agregarCodigoBarras(idUnico) {
+  const producto = productos.find(p => p.idUnico === idUnico);
   if (!producto) return;
 
   const nuevoCodigo = prompt("Ingresá el nuevo código de barras:");
@@ -864,16 +856,23 @@ function agregarCodigoBarras(id) {
   }
 
   producto.codigoBarras = nuevoCodigo;
-  const ref = firebaseRef(`productosPorLista/general/${nuevoCodigo}`);
-  firebaseSet(ref, producto)
-    .then(() => {
-      mostrarAviso("Código de barras agregado correctamente", "ok");
-      mostrarSugerenciasInteligentes();
-    })
-    .catch((error) => {
-      console.error("Error al guardar nuevo código:", error);
-      mostrarAviso("Error al guardar el código", "error");
-    });
+  // Guardar en la lista general de productos
+  firebaseGet(firebaseRef("productosPorLista/general")).then(snapshot => {
+    let data = snapshot.val() || [];
+    const index = data.findIndex(p => p.idUnico === producto.idUnico);
+    if (index !== -1) {
+      data[index] = producto;
+      firebaseSet(firebaseRef("productosPorLista/general"), data)
+        .then(() => {
+          mostrarAviso("Código de barras agregado correctamente", "ok");
+          mostrarSugerenciasInteligentes();
+        })
+        .catch((error) => {
+          console.error("Error al guardar nuevo código:", error);
+          mostrarAviso("Error al guardar el código", "error");
+        });
+    }
+  });
 }
 
 // Botón para alternar entre vista expandida y contraída de la tabla

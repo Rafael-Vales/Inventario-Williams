@@ -19,3 +19,5 @@ window.firebaseSet = (ref, value) => ref.set(value);
 window.firebaseOnValue = (ref, callback) => ref.on("value", (snapshot) => callback(snapshot));
 window.firebaseUpdate = (ref, value) => ref.update(value);
 window.firebaseRemove = (ref) => ref.remove();
+// Lectura puntual (no suscripción)
+window.firebaseGet = (ref) => ref.get();
