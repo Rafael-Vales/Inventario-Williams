@@ -32,6 +32,15 @@ if (inputNombre && contenedorSugerencias) {
           inputNombre.value = p.producto;
           contenedorSugerencias.innerHTML = '';
           contenedorSugerencias.style.display = 'none';
+
+          // Autocompletar el resto de campos del formulario principal
+          document.getElementById("codigoBarras").value = p.codigoBarras || '';
+          document.getElementById("unidadesPorCaja").value = p.unidadesPorCaja || '';
+          document.getElementById("cajas").value = p.cantidadCajas || '';
+          document.getElementById("unidadesSueltas").value = p.unidadesSueltas || '';
+          document.getElementById("precioCosto").value = p.precioCosto || '';
+          document.getElementById("precioPorUnidad").value = p.precioUnidad || '';
+          document.getElementById("categoriaProducto").value = p.categoria || '';
         });
         contenedorSugerencias.appendChild(div);
       });
@@ -76,6 +85,18 @@ if (inputNombre && contenedorSugerencias) {
             inputNombrePopup.value = p.producto;
             contenedorSugerenciasPopup.innerHTML = '';
             contenedorSugerenciasPopup.style.display = 'none';
+
+            // Autocompletar campos del popup si se encuentra el producto
+            const popupForm = document.getElementById("formPopupProducto");
+            if (!popupForm) return;
+
+            popupForm.elements["codigoBarras"].value = p.codigoBarras || '';
+            popupForm.elements["unidadesPorCaja"].value = p.unidadesPorCaja || '';
+            popupForm.elements["cajas"].value = p.cantidadCajas || '';
+            popupForm.elements["unidadesSueltas"].value = p.unidadesSueltas || '';
+            popupForm.elements["precioCosto"].value = p.precioCosto || '';
+            popupForm.elements["precioPorUnidad"].value = p.precioUnidad || '';
+            popupForm.elements["categoriaProducto"].value = p.categoria || '';
           });
           contenedorSugerenciasPopup.appendChild(div);
         });
@@ -991,3 +1012,56 @@ document.addEventListener("DOMContentLoaded", () => {
 
   contenedorTabla.prepend(toggleBtn);
 });
+
+// AUTOCOMPLETADO DE CATEGORÍA PARA FORM PRINCIPAL Y POPUP
+function configurarAutocompleteCategorias(input) {
+  const contenedor = document.createElement('div');
+  contenedor.className = 'sugerencias-autocomplete';
+  input.insertAdjacentElement('afterend', contenedor);
+
+  input.addEventListener('input', () => {
+    const texto = input.value.toLowerCase();
+    contenedor.innerHTML = '';
+
+    if (!texto || texto.length < 1) {
+      contenedor.style.display = 'none';
+      return;
+    }
+
+    const lista = Array.from(document.querySelectorAll('#listaCategoriasFormulario option')).map(opt => opt.value);
+    const coincidencias = lista
+      .filter(cat => cat.toLowerCase().includes(texto))
+      .slice(0, 10);
+
+    if (coincidencias.length > 0) {
+      coincidencias.forEach(cat => {
+        const div = document.createElement('div');
+        div.textContent = cat;
+        div.addEventListener('click', () => {
+          input.value = cat;
+          contenedor.innerHTML = '';
+          contenedor.style.display = 'none';
+        });
+        contenedor.appendChild(div);
+      });
+      contenedor.style.display = 'block';
+    } else {
+      contenedor.style.display = 'none';
+    }
+  });
+
+  // Ocultar sugerencias al perder foco
+  input.addEventListener('blur', () => {
+    setTimeout(() => contenedor.style.display = 'none', 150);
+  });
+
+  input.addEventListener('focus', () => {
+    input.dispatchEvent(new Event('input'));
+  });
+}
+
+// Aplicar a ambos formularios si existen
+const inputCategoriaPrincipal = document.querySelector('#formProducto #categoriaProducto');
+const inputCategoriaPopup = document.querySelector('#formPopupProducto [name="categoriaProducto"]');
+if (inputCategoriaPrincipal) configurarAutocompleteCategorias(inputCategoriaPrincipal);
+if (inputCategoriaPopup) configurarAutocompleteCategorias(inputCategoriaPopup);

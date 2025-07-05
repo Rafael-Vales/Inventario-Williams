@@ -3,6 +3,10 @@
   position: relative;
 }
 
+.input-group-categoria {
+  position: relative;
+}
+
 .sugerencias-autocomplete {
   position: absolute;
   background: white;
@@ -885,4 +889,31 @@ form {
 .tabla-contenedor table:not(.expandido) th:not(:nth-child(1)):not(:nth-child(2)):not(:nth-child(3)):not(:nth-child(4)):not(:nth-child(5)):not(:nth-child(6)):not(:nth-child(7)):not(:nth-child(8)):not(:nth-child(9)):not(:nth-child(15)),
 .tabla-contenedor table:not(.expandido) td:not(:nth-child(1)):not(:nth-child(2)):not(:nth-child(3)):not(:nth-child(4)):not(:nth-child(5)):not(:nth-child(6)):not(:nth-child(7)):not(:nth-child(8)):not(:nth-child(9)):not(:nth-child(15)) {
   display: none;
+}
+.input-categoria {
+  position: relative;
+}
+.sugerencias-autocomplete {
+  position: absolute;
+  background: var(--color-form-bg);
+  border: 1px solid var(--color-form-borde);
+  max-height: 160px;
+  overflow-y: auto;
+  width: 100%;
+  z-index: 1000;
+  display: none;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  border-radius: 6px;
+}
+
+.sugerencias-autocomplete div {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-form-borde);
+}
+
+.sugerencias-autocomplete div:hover {
+  background-color: var(--color-btn-hover);
 }
