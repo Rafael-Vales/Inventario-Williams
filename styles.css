@@ -1,4 +1,28 @@
 
+.input-group-producto {
+  position: relative;
+}
+
+.sugerencias-autocomplete {
+  position: absolute;
+  background: white;
+  border: 1px solid #ccc;
+  max-height: 150px;
+  overflow-y: auto;
+  width: 100%;
+  z-index: 100;
+  display: none;
+}
+
+.sugerencias-autocomplete div {
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.sugerencias-autocomplete div:hover {
+  background-color: #f0f0f0;
+}
+
     .encabezado-fijo {
       position: sticky;
       top: 0;

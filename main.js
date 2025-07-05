@@ -1,3 +1,97 @@
+// Autocomplete para productoNombre
+let productosFiltrados = [];
+document.addEventListener("DOMContentLoaded", () => {
+  // Mantener productosFiltrados actualizado con productos actuales
+  productosFiltrados = productos;
+});
+
+const inputNombre = document.getElementById('productoNombre');
+const contenedorSugerencias = document.getElementById('sugerenciasProducto');
+
+if (inputNombre && contenedorSugerencias) {
+  inputNombre.addEventListener('input', () => {
+    const texto = inputNombre.value.toLowerCase();
+    contenedorSugerencias.innerHTML = '';
+
+    if (!texto || texto.length < 2) {
+      contenedorSugerencias.style.display = 'none';
+      return;
+    }
+
+    // Usar productosFiltrados si existe, si no usar productos
+    const lista = Array.isArray(productosFiltrados) && productosFiltrados.length > 0 ? productosFiltrados : productos;
+    const coincidencias = lista
+      .filter(p => p.producto && p.producto.toLowerCase().includes(texto))
+      .slice(0, 10);
+
+    if (coincidencias.length > 0) {
+      coincidencias.forEach(p => {
+        const div = document.createElement('div');
+        div.textContent = p.producto;
+        div.addEventListener('click', () => {
+          inputNombre.value = p.producto;
+          contenedorSugerencias.innerHTML = '';
+          contenedorSugerencias.style.display = 'none';
+        });
+        contenedorSugerencias.appendChild(div);
+      });
+      contenedorSugerencias.style.display = 'block';
+    } else {
+      contenedorSugerencias.style.display = 'none';
+    }
+  });
+  // Ocultar sugerencias al perder el foco con un pequeño retraso
+  inputNombre.addEventListener('blur', () => {
+    setTimeout(() => {
+      contenedorSugerencias.style.display = 'none';
+    }, 200);
+  });
+
+  // --- AUTOCOMPLETE PARA FORMULARIO POPUP ---
+  const inputNombrePopup = document.querySelector('#formPopupProducto input[name="producto"]');
+  if (inputNombrePopup) {
+    const contenedorSugerenciasPopup = document.createElement('div');
+    contenedorSugerenciasPopup.className = 'sugerencias-autocomplete';
+    inputNombrePopup.parentNode.insertBefore(contenedorSugerenciasPopup, inputNombrePopup.nextSibling);
+
+    inputNombrePopup.addEventListener('input', () => {
+      const texto = inputNombrePopup.value.toLowerCase();
+      contenedorSugerenciasPopup.innerHTML = '';
+
+      if (!texto || texto.length < 2) {
+        contenedorSugerenciasPopup.style.display = 'none';
+        return;
+      }
+
+      const lista = Array.isArray(productosFiltrados) && productosFiltrados.length > 0 ? productosFiltrados : productos;
+      const coincidencias = lista
+        .filter(p => p.producto && p.producto.toLowerCase().includes(texto))
+        .slice(0, 10);
+
+      if (coincidencias.length > 0) {
+        coincidencias.forEach(p => {
+          const div = document.createElement('div');
+          div.textContent = p.producto;
+          div.addEventListener('click', () => {
+            inputNombrePopup.value = p.producto;
+            contenedorSugerenciasPopup.innerHTML = '';
+            contenedorSugerenciasPopup.style.display = 'none';
+          });
+          contenedorSugerenciasPopup.appendChild(div);
+        });
+        contenedorSugerenciasPopup.style.display = 'block';
+      } else {
+        contenedorSugerenciasPopup.style.display = 'none';
+      }
+    });
+    // Ocultar sugerencias al perder el foco con un pequeño retraso
+    inputNombrePopup.addEventListener('blur', () => {
+      setTimeout(() => {
+        contenedorSugerenciasPopup.style.display = 'none';
+      }, 200);
+    });
+  }
+}
 let productos = [];
 let productoEditando = null;
 let filtros = {
@@ -420,7 +514,7 @@ function crearTarjetaProducto(p) {
 function guardarProducto() {
   const producto = {
     codigoBarras: document.getElementById("codigoBarras").value.trim(),
-    producto: document.getElementById("producto").value.trim(),
+    producto: document.getElementById("productoNombre").value.trim(),
     unidadesPorCaja: parseInt(document.getElementById("unidadesPorCaja").value) || 0,
     cantidadCajas: parseInt(document.getElementById("cajas").value) || 0,
     unidadesSueltas: parseInt(document.getElementById("unidadesSueltas").value) || 0,
