@@ -84,9 +84,8 @@
 
       <div class="grupo-input">
         <div class="input-group-categoria">
-          <input list="listaCategoriasFormulario" id="categoriaProducto" placeholder="Seleccionar categoría" required />
+          <input id="categoriaProducto" placeholder="Seleccionar categoría" required />
         </div>
-        <datalist id="listaCategoriasFormulario"></datalist>
       </div>
 
       <button type="submit" class="btn-guardar">Guardar</button>
@@ -191,9 +190,8 @@
         <input type="number" name="precioCosto" placeholder="Precio de Costo" step="0.01" min="0">
         <input type="number" name="precioPorUnidad" placeholder="Precio por Unidad" step="0.01" min="0">
         <div class="input-group-categoria">
-          <input list="listaCategoriasFormulario" name="categoriaProducto" class="input-categoria" placeholder="Seleccionar categoría" required />
+          <input name="categoriaProducto" class="input-categoria" placeholder="Seleccionar categoría" required />
         </div>
-        <datalist id="listaCategoriasFormulario"></datalist>
         <button type="submit">Guardar</button>
       </form>
     </div>

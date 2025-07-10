@@ -301,17 +301,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const temaGuardado = localStorage.getItem("temaSeleccionado");
   if (temaGuardado) aplicarTema(temaGuardado);
 
-  // Cargar categorías en todos los elementos con id="categoriaProducto" y también en datalist#listaCategoriasFormulario
+  // Cargar categorías en todos los elementos con id="categoriaProducto"
   const selectCategoriasTodos = document.querySelectorAll("#categoriaProducto");
-  const datalistFormulario = document.getElementById("listaCategoriasFormulario");
   if (selectCategoriasTodos.length > 0) {
     firebaseOnValue(firebaseRef("productosPorLista/categorias"), (snapshot) => {
       const data = snapshot.val();
       console.log("🔥 Categorías desde Firebase:", data);
-      // Limpiar el datalist antes de agregar nuevas opciones
-      if (datalistFormulario) {
-        datalistFormulario.innerHTML = "";
-      }
       selectCategoriasTodos.forEach(select => {
         // Solo modificar si es un <select>
         if (select.tagName === "SELECT") {
@@ -325,11 +320,6 @@ document.addEventListener("DOMContentLoaded", () => {
               option.value = categoria;
               option.textContent = categoria;
               select.appendChild(option);
-            }
-            if (datalistFormulario) {
-              const option = document.createElement("option");
-              option.value = categoria;
-              datalistFormulario.appendChild(option);
             }
           });
         }
