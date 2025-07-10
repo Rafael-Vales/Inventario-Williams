@@ -70,7 +70,7 @@ function configurarAutocompletadoPersonalizado(input, getOpciones, onSeleccion) 
     } else if (e.key === "Enter") {
       if (highlightedIndex >= 0 && opcionesActuales[highlightedIndex]) {
         e.preventDefault();
-        opcionesActuales[highlightedIndex].dispatchEvent(new Event("mousedown"));
+        opcionesActuales[highlightedIndex].dispatchEvent(new Event("pointerdown"));
       }
     }
   });
@@ -87,6 +87,13 @@ function configurarAutocompletadoPersonalizado(input, getOpciones, onSeleccion) 
 
 // --- AUTOCOMPLETADO PARA PRODUCTO PRINCIPAL ---
 document.addEventListener("DOMContentLoaded", () => {
+  // Cargar lista de categorías global para autocompletado
+  firebaseOnValue(firebaseRef("productosPorLista/categorias"), (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      window.listaCategoriasGlobal = Object.values(data).sort((a, b) => a.localeCompare(b));
+    }
+  });
   // Mantener productosFiltrados actualizado con productos actuales
   window.productosFiltrados = productos;
   // Principal
@@ -1051,9 +1058,9 @@ document.addEventListener("DOMContentLoaded", () => {
 // AUTOCOMPLETADO DE CATEGORÍA PARA FORM PRINCIPAL Y POPUP
 // --- AUTOCOMPLETADO PARA CATEGORÍA PRINCIPAL Y POPUP ---
 function getCategoriasCoincidentes(texto) {
-  const lista = Array.from(document.querySelectorAll('#listaCategoriasFormulario option')).map(opt => opt.value);
-  return lista
-    .filter(cat => cat.toLowerCase().includes(texto))
+  const categorias = window.listaCategoriasGlobal || [];
+  return categorias
+    .filter(cat => cat.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")))
     .slice(0, 10)
     .map(cat => ({ texto: cat, valor: cat }));
 }
