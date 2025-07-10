@@ -39,8 +39,8 @@ function configurarAutocompletadoPersonalizado(input, getOpciones, onSeleccion) 
       const div = document.createElement("div");
       div.tabIndex = 0;
       div.textContent = opcion.texto;
-      div.addEventListener("mousedown", (e) => {
-        // Usar mousedown en vez de click para evitar blur antes de seleccionar
+      div.addEventListener("pointerdown", (e) => {
+        // Usar pointerdown en vez de click/mousedown para evitar blur antes de seleccionar
         e.preventDefault();
         onSeleccion(opcion.valor);
         lista.innerHTML = "";
