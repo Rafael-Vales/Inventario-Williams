@@ -1,197 +1,141 @@
-// Función utilitaria para normalizar texto (ignorar tildes y minúsculas)
-function normalizarTexto(texto) {
-  return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-}
+// --- AUTOCOMPLETADO PERSONALIZADO UNIVERSAL ---
+// Esta función configura autocompletado para un input dado, usando una lista de opciones y un callback de selección.
+function configurarAutocompletadoPersonalizado(input, getOpciones, onSeleccion) {
+  if (!input) return;
+  let highlightedIndex = -1;
+  let opcionesActuales = [];
+  let lista = document.createElement("div");
+  lista.className = "autocompletado-lista sugerencias-autocomplete";
+  input.parentNode.insertBefore(lista, input.nextSibling);
 
-// Autocomplete para productoNombre
-let productosFiltrados = [];
-document.addEventListener("DOMContentLoaded", () => {
-  // Mantener productosFiltrados actualizado con productos actuales
-  productosFiltrados = productos;
-});
+  // Función para actualizar el resaltado visual
+  function actualizarResaltado(opciones) {
+    opciones.forEach((div, idx) => {
+      if (idx === highlightedIndex) {
+        div.classList.add("highlighted");
+        div.style.backgroundColor = "#f4c1cd";
+      } else {
+        div.classList.remove("highlighted");
+        div.style.backgroundColor = "";
+      }
+    });
+  }
 
-const inputNombre = document.getElementById('productoNombre');
-const contenedorSugerencias = document.getElementById('sugerenciasProducto');
-
-if (inputNombre && contenedorSugerencias) {
-  let indiceSugerencia = -1;
-  inputNombre.addEventListener('input', () => {
-    const texto = inputNombre.value;
-    contenedorSugerencias.innerHTML = '';
-
-    if (!texto || texto.length < 2) {
-      contenedorSugerencias.style.display = 'none';
+  input.addEventListener("input", function () {
+    const texto = input.value.toLowerCase();
+    lista.innerHTML = "";
+    opcionesActuales = [];
+    highlightedIndex = -1;
+    if (!texto || texto.length < (input.id === "productoNombre" || input.name === "producto" ? 2 : 1)) {
+      lista.style.display = "none";
       return;
     }
-
-    // Usar productosFiltrados si existe, si no usar productos
-    const lista = Array.isArray(productosFiltrados) && productosFiltrados.length > 0 ? productosFiltrados : productos;
-    const coincidencias = lista
-      .filter(p => p.producto && normalizarTexto(p.producto).includes(normalizarTexto(texto)))
-      .slice(0, 10);
-
-    // Resetear el índice de sugerencia al cambiar la lista
-    indiceSugerencia = -1;
-
-    if (coincidencias.length > 0) {
-      coincidencias.forEach(p => {
-        const div = document.createElement('div');
-        div.tabIndex = 0;
-        div.textContent = p.producto;
-        div.addEventListener('click', () => {
-          inputNombre.value = p.producto;
-          contenedorSugerencias.innerHTML = '';
-          contenedorSugerencias.style.display = 'none';
-
-          // Autocompletar el resto de campos del formulario principal
-          document.getElementById("codigoBarras").value = p.codigoBarras || '';
-          document.getElementById("unidadesPorCaja").value = p.unidadesPorCaja || '';
-          document.getElementById("cajas").value = p.cantidadCajas || '';
-          document.getElementById("unidadesSueltas").value = p.unidadesSueltas || '';
-          document.getElementById("precioCosto").value = p.precioCosto || '';
-          document.getElementById("precioPorUnidad").value = p.precioUnidad || '';
-          document.getElementById("categoriaProducto").value = p.categoria || '';
-        });
-        contenedorSugerencias.appendChild(div);
-        div.addEventListener("keydown", (e) => {
-          if (e.key === "ArrowDown") {
-            e.preventDefault();
-            const next = div.nextElementSibling;
-            if (next) next.focus();
-          } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            const prev = div.previousElementSibling;
-            if (prev) prev.focus();
-          } else if (e.key === "Enter") {
-            e.preventDefault();
-            div.click();
-          }
-        });
+    const opciones = getOpciones(texto);
+    if (opciones.length === 0) {
+      lista.style.display = "none";
+      return;
+    }
+    opciones.forEach((opcion, idx) => {
+      const div = document.createElement("div");
+      div.tabIndex = 0;
+      div.textContent = opcion.texto;
+      div.addEventListener("mousedown", (e) => {
+        // Usar mousedown en vez de click para evitar blur antes de seleccionar
+        e.preventDefault();
+        onSeleccion(opcion.valor);
+        lista.innerHTML = "";
+        lista.style.display = "none";
       });
-      contenedorSugerencias.style.display = 'block';
-      // Soporte de teclado para sugerencias
-      const sugerenciasDivs = contenedorSugerencias.querySelectorAll('div');
-      inputNombre.addEventListener('keydown', function sugerenciasKeydown(e) {
-        // Si no hay sugerencias, salir
-        if (!sugerenciasDivs.length) return;
+      lista.appendChild(div);
+      opcionesActuales.push(div);
+    });
+    lista.style.display = "block";
+    actualizarResaltado(opcionesActuales);
+  });
 
-        if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          indiceSugerencia = (indiceSugerencia + 1) % sugerenciasDivs.length;
-        } else if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          indiceSugerencia = (indiceSugerencia - 1 + sugerenciasDivs.length) % sugerenciasDivs.length;
-        } else if (e.key === 'Enter') {
-          if (indiceSugerencia >= 0) {
-            e.preventDefault();
-            sugerenciasDivs[indiceSugerencia].click();
-          }
-          return;
-        } else {
-          return;
-        }
-
-        sugerenciasDivs.forEach((div, idx) => {
-          div.style.backgroundColor = idx === indiceSugerencia ? '#f4c1cd' : '';
-        });
-      }, { once: true });
-    } else {
-      contenedorSugerencias.style.display = 'none';
+  input.addEventListener("keydown", function (e) {
+    if (!opcionesActuales.length || lista.style.display !== "block") return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (highlightedIndex < opcionesActuales.length - 1) {
+        highlightedIndex++;
+        actualizarResaltado(opcionesActuales);
+      }
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (highlightedIndex > 0) {
+        highlightedIndex--;
+        actualizarResaltado(opcionesActuales);
+      }
+    } else if (e.key === "Enter") {
+      if (highlightedIndex >= 0 && opcionesActuales[highlightedIndex]) {
+        e.preventDefault();
+        opcionesActuales[highlightedIndex].dispatchEvent(new Event("mousedown"));
+      }
     }
   });
   // Ocultar sugerencias al perder el foco con un pequeño retraso
-  inputNombre.addEventListener('blur', () => {
+  input.addEventListener("blur", () => {
     setTimeout(() => {
-      contenedorSugerencias.style.display = 'none';
-    }, 200);
+      lista.style.display = "none";
+    }, 150);
   });
-
-  // --- AUTOCOMPLETE PARA FORMULARIO POPUP ---
-  const inputNombrePopup = document.querySelector('#formPopupProducto input[name="producto"]');
-  if (inputNombrePopup) {
-    let indiceSugerenciaPopup = -1;
-    const contenedorSugerenciasPopup = document.createElement('div');
-    contenedorSugerenciasPopup.className = 'sugerencias-autocomplete';
-    inputNombrePopup.parentNode.insertBefore(contenedorSugerenciasPopup, inputNombrePopup.nextSibling);
-
-    inputNombrePopup.addEventListener('input', () => {
-      const texto = inputNombrePopup.value;
-      contenedorSugerenciasPopup.innerHTML = '';
-
-      if (!texto || texto.length < 2) {
-        contenedorSugerenciasPopup.style.display = 'none';
-        return;
-      }
-
-      const lista = Array.isArray(productosFiltrados) && productosFiltrados.length > 0 ? productosFiltrados : productos;
-      const coincidencias = lista
-        .filter(p => p.producto && normalizarTexto(p.producto).includes(normalizarTexto(texto)))
-        .slice(0, 10);
-
-      // Resetear el índice de sugerencia al cambiar la lista
-      indiceSugerenciaPopup = -1;
-
-      if (coincidencias.length > 0) {
-        coincidencias.forEach(p => {
-          const div = document.createElement('div');
-          div.textContent = p.producto;
-          div.addEventListener('click', () => {
-            inputNombrePopup.value = p.producto;
-            contenedorSugerenciasPopup.innerHTML = '';
-            contenedorSugerenciasPopup.style.display = 'none';
-
-            // Autocompletar campos del popup si se encuentra el producto
-            const popupForm = document.getElementById("formPopupProducto");
-            if (!popupForm) return;
-
-            popupForm.elements["codigoBarras"].value = p.codigoBarras || '';
-            popupForm.elements["unidadesPorCaja"].value = p.unidadesPorCaja || '';
-            popupForm.elements["cajas"].value = p.cantidadCajas || '';
-            popupForm.elements["unidadesSueltas"].value = p.unidadesSueltas || '';
-            popupForm.elements["precioCosto"].value = p.precioCosto || '';
-            popupForm.elements["precioPorUnidad"].value = p.precioUnidad || '';
-            popupForm.elements["categoriaProducto"].value = p.categoria || '';
-          });
-          contenedorSugerenciasPopup.appendChild(div);
-        });
-        contenedorSugerenciasPopup.style.display = 'block';
-        // Soporte de teclado para sugerencias en el popup
-        const sugerenciasDivsPopup = contenedorSugerenciasPopup.querySelectorAll('div');
-        inputNombrePopup.addEventListener('keydown', function sugerenciasPopupKeydown(e) {
-          if (!sugerenciasDivsPopup.length) return;
-
-          if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            indiceSugerenciaPopup = (indiceSugerenciaPopup + 1) % sugerenciasDivsPopup.length;
-          } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            indiceSugerenciaPopup = (indiceSugerenciaPopup - 1 + sugerenciasDivsPopup.length) % sugerenciasDivsPopup.length;
-          } else if (e.key === 'Enter') {
-            if (indiceSugerenciaPopup >= 0) {
-              e.preventDefault();
-              sugerenciasDivsPopup[indiceSugerenciaPopup].click();
-            }
-            return;
-          } else {
-            return;
-          }
-
-          sugerenciasDivsPopup.forEach((div, idx) => {
-            div.style.backgroundColor = idx === indiceSugerenciaPopup ? '#f4c1cd' : '';
-          });
-        }, { once: true });
-      } else {
-        contenedorSugerenciasPopup.style.display = 'none';
-      }
-    });
-    // Ocultar sugerencias al perder el foco con un pequeño retraso
-    inputNombrePopup.addEventListener('blur', () => {
-      setTimeout(() => {
-        contenedorSugerenciasPopup.style.display = 'none';
-      }, 200);
-    });
-  }
+  input.addEventListener("focus", () => {
+    input.dispatchEvent(new Event("input"));
+  });
 }
+
+// --- AUTOCOMPLETADO PARA PRODUCTO PRINCIPAL ---
+document.addEventListener("DOMContentLoaded", () => {
+  // Mantener productosFiltrados actualizado con productos actuales
+  window.productosFiltrados = productos;
+  // Principal
+  const inputNombre = document.getElementById('productoNombre');
+  configurarAutocompletadoPersonalizado(
+    inputNombre,
+    (texto) => {
+      const lista = Array.isArray(window.productosFiltrados) && window.productosFiltrados.length > 0 ? window.productosFiltrados : productos;
+      return lista
+        .filter(p => p.producto && p.producto.toLowerCase().includes(texto))
+        .slice(0, 10)
+        .map(p => ({ texto: p.producto, valor: p }));
+    },
+    (p) => {
+      inputNombre.value = p.producto;
+      document.getElementById("codigoBarras").value = p.codigoBarras || '';
+      document.getElementById("unidadesPorCaja").value = p.unidadesPorCaja || '';
+      document.getElementById("cajas").value = p.cantidadCajas || '';
+      document.getElementById("unidadesSueltas").value = p.unidadesSueltas || '';
+      document.getElementById("precioCosto").value = p.precioCosto || '';
+      document.getElementById("precioPorUnidad").value = p.precioUnidad || '';
+      document.getElementById("categoriaProducto").value = p.categoria || '';
+    }
+  );
+  // Popup
+  const inputNombrePopup = document.querySelector('#formPopupProducto input[name="producto"]');
+  configurarAutocompletadoPersonalizado(
+    inputNombrePopup,
+    (texto) => {
+      const lista = Array.isArray(window.productosFiltrados) && window.productosFiltrados.length > 0 ? window.productosFiltrados : productos;
+      return lista
+        .filter(p => p.producto && p.producto.toLowerCase().includes(texto))
+        .slice(0, 10)
+        .map(p => ({ texto: p.producto, valor: p }));
+    },
+    (p) => {
+      inputNombrePopup.value = p.producto;
+      const popupForm = document.getElementById("formPopupProducto");
+      if (!popupForm) return;
+      popupForm.elements["codigoBarras"].value = p.codigoBarras || '';
+      popupForm.elements["unidadesPorCaja"].value = p.unidadesPorCaja || '';
+      popupForm.elements["cajas"].value = p.cantidadCajas || '';
+      popupForm.elements["unidadesSueltas"].value = p.unidadesSueltas || '';
+      popupForm.elements["precioCosto"].value = p.precioCosto || '';
+      popupForm.elements["precioPorUnidad"].value = p.precioUnidad || '';
+      popupForm.elements["categoriaProducto"].value = p.categoria || '';
+    }
+  );
+});
 let productos = [];
 let productoEditando = null;
 let filtros = {
@@ -790,8 +734,8 @@ function renderizarProductos() {
       const coincideCategoria =
         !filtros.categoria ||
         filtros.categoria === "Todas" ||
-        (p.categoria && normalizarTexto(p.categoria) === normalizarTexto(filtros.categoria));
-      const coincideTexto = !filtros.texto || normalizarTexto(p.producto).includes(normalizarTexto(filtros.texto));
+        p.categoria === filtros.categoria;
+      const coincideTexto = p.producto.toLowerCase().includes(filtros.texto.toLowerCase());
       const coincideColor =
         !filtros.color ||
         obtenerColorPorStock(calcularTotalUnidades(p), p.color).includes(filtros.color);
@@ -1115,69 +1059,27 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // AUTOCOMPLETADO DE CATEGORÍA PARA FORM PRINCIPAL Y POPUP
-function configurarAutocompleteCategorias(input) {
-  const contenedor = document.createElement('div');
-  contenedor.className = 'sugerencias-autocomplete';
-  input.insertAdjacentElement('afterend', contenedor);
-
-  input.addEventListener('input', () => {
-    const texto = input.value;
-    contenedor.innerHTML = '';
-
-    if (!texto || texto.length < 1) {
-      contenedor.style.display = 'none';
-      return;
-    }
-
-    const lista = Array.from(document.querySelectorAll('#listaCategoriasFormulario option')).map(opt => opt.value);
-    const coincidencias = lista
-      .filter(cat => normalizarTexto(cat).includes(normalizarTexto(texto)))
-      .slice(0, 10);
-
-    if (coincidencias.length > 0) {
-      coincidencias.forEach(cat => {
-        const div = document.createElement('div');
-        div.tabIndex = 0;
-        div.textContent = cat;
-        div.addEventListener('click', () => {
-          input.value = cat;
-          contenedor.innerHTML = '';
-          contenedor.style.display = 'none';
-        });
-        contenedor.appendChild(div);
-        div.addEventListener("keydown", (e) => {
-          if (e.key === "ArrowDown") {
-            e.preventDefault();
-            const next = div.nextElementSibling;
-            if (next) next.focus();
-          } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            const prev = div.previousElementSibling;
-            if (prev) prev.focus();
-          } else if (e.key === "Enter") {
-            e.preventDefault();
-            div.click();
-          }
-        });
-      });
-      contenedor.style.display = 'block';
-    } else {
-      contenedor.style.display = 'none';
-    }
-  });
-
-  // Ocultar sugerencias al perder foco
-  input.addEventListener('blur', () => {
-    setTimeout(() => contenedor.style.display = 'none', 150);
-  });
-
-  input.addEventListener('focus', () => {
-    input.dispatchEvent(new Event('input'));
-  });
+// --- AUTOCOMPLETADO PARA CATEGORÍA PRINCIPAL Y POPUP ---
+function getCategoriasCoincidentes(texto) {
+  const lista = Array.from(document.querySelectorAll('#listaCategoriasFormulario option')).map(opt => opt.value);
+  return lista
+    .filter(cat => cat.toLowerCase().includes(texto))
+    .slice(0, 10)
+    .map(cat => ({ texto: cat, valor: cat }));
 }
-
-// Aplicar a ambos formularios si existen
 const inputCategoriaPrincipal = document.querySelector('#formProducto #categoriaProducto');
 const inputCategoriaPopup = document.querySelector('#formPopupProducto [name="categoriaProducto"]');
-if (inputCategoriaPrincipal) configurarAutocompleteCategorias(inputCategoriaPrincipal);
-if (inputCategoriaPopup) configurarAutocompleteCategorias(inputCategoriaPopup);
+configurarAutocompletadoPersonalizado(
+  inputCategoriaPrincipal,
+  getCategoriasCoincidentes,
+  (cat) => {
+    inputCategoriaPrincipal.value = cat;
+  }
+);
+configurarAutocompletadoPersonalizado(
+  inputCategoriaPopup,
+  getCategoriasCoincidentes,
+  (cat) => {
+    inputCategoriaPopup.value = cat;
+  }
+);
