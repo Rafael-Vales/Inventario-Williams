@@ -189,7 +189,7 @@ function mostrarPopupAsociarCodigo(codigo) {
   if (window.productos && Array.isArray(window.productos)) {
     window.productos.forEach(p => {
       const option = document.createElement("option");
-      option.value = p.codigoBarras;
+      option.value = p.idUnico;
       option.textContent = p.producto;
       select.appendChild(option);
     });
@@ -223,24 +223,20 @@ function confirmarAsociacionCodigo() {
   const productoId = select.value;
   if (!productoId || !codigo) return mostrarAviso("Seleccioná un producto válido", "error");
 
-  const ref = firebaseRef(`productosPorLista/general/${productoId}`);
+  const ref = firebaseRef(`productosPorLista/general`);
 
   firebaseOnValue(ref, (snapshot) => {
-    const producto = snapshot.val();
-    if (!producto) {
+    const productos = snapshot.val();
+    if (!productos || !productos[productoId]) {
       return mostrarAviso("Producto no encontrado", "error");
     }
 
+    const producto = productos[productoId];
     producto.codigoBarras = codigo;
 
-    // Guardar el producto actualizado con el nuevo código de barras
-    firebaseSet(firebaseRef(`productosPorLista/general/${codigo}`), producto)
+    // Guardar el producto actualizado en su ruta original por idUnico
+    firebaseSet(firebaseRef(`productosPorLista/general/${productoId}`), producto)
       .then(() => {
-        // Borrar el producto viejo si el código fue distinto
-        if (codigo !== productoId) {
-          firebaseRemove(ref);
-        }
-
         mostrarAviso("Código vinculado correctamente", "ok");
         cerrarPopupAsociar();
       })
