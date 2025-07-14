@@ -185,13 +185,54 @@ function mostrarPopupAsociarCodigo(codigo) {
   // Limpiar select
   select.innerHTML = "";
 
-  // Cargar opciones de productos desde productos global
+  // Cargar opciones de productos ordenadas alfabéticamente
   if (window.productos && Array.isArray(window.productos)) {
-    window.productos.forEach(p => {
+    const productosOrdenados = [...window.productos].sort((a, b) => {
+      return (a.producto || "").localeCompare(b.producto || "");
+    });
+
+    productosOrdenados.forEach(p => {
       const option = document.createElement("option");
       option.value = p.idUnico;
       option.textContent = p.producto;
       select.appendChild(option);
+    });
+
+    // Hacer el select editable con datalist
+    const datalistId = "datalistProductosAsociar";
+    let datalist = document.getElementById(datalistId);
+    if (!datalist) {
+      datalist = document.createElement("datalist");
+      datalist.id = datalistId;
+      productosOrdenados.forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.producto;
+        datalist.appendChild(opt);
+      });
+      document.body.appendChild(datalist);
+    }
+
+    // Reemplazar select por input con datalist
+    const nuevoInput = document.createElement("input");
+    nuevoInput.type = "text";
+    nuevoInput.id = "inputProductoAsociar";
+    nuevoInput.setAttribute("list", datalistId);
+    nuevoInput.style.width = "100%";
+    nuevoInput.style.marginTop = "10px";
+
+    // Insertar input editable y eliminar el select
+    select.parentNode.replaceChild(nuevoInput, select);
+    nuevoInput.dataset.codigo = popup.dataset.codigo;
+    popup.dataset.inputAsociar = "true";
+
+    // Asignar comportamiento de selección con coincidencia exacta
+    nuevoInput.addEventListener("change", () => {
+      const seleccionado = window.productos.find(p => p.producto === nuevoInput.value);
+      if (seleccionado) {
+        nuevoInput.dataset.idUnico = seleccionado.idUnico;
+      } else {
+        nuevoInput.dataset.idUnico = "";
+      }
     });
   }
 
@@ -217,10 +258,11 @@ function mostrarPopupAsociarCodigo(codigo) {
 // Confirmar asociación del código escaneado con un producto existente
 function confirmarAsociacionCodigo() {
   const popup = document.getElementById("popupAsociarCodigo");
-  const select = document.getElementById("selectProductoExistente");
+  // Usar el nuevo input en vez del select
+  const input = document.getElementById("inputProductoAsociar");
   const codigo = popup.dataset.codigo;
 
-  const productoId = select.value;
+  const productoId = input?.dataset.idUnico;
   if (!productoId || !codigo) return mostrarAviso("Seleccioná un producto válido", "error");
 
   const ref = firebaseRef(`productosPorLista/general`);
