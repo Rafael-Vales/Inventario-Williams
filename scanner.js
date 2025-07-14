@@ -225,26 +225,35 @@ function confirmarAsociacionCodigo() {
 
   const ref = firebaseRef(`productosPorLista/general`);
 
-  firebaseOnValue(ref, (snapshot) => {
-    const productos = snapshot.val();
-    if (!productos || !productos[productoId]) {
+  firebaseGet(ref).then((snapshot) => {
+    const productos = snapshot.val() || [];
+    // Buscar el producto por idUnico
+    const producto = Object.values(productos).find(p => p && p.idUnico === productoId);
+    if (!producto) {
       return mostrarAviso("Producto no encontrado", "error");
     }
-
-    const producto = productos[productoId];
     producto.codigoBarras = codigo;
 
-    // Guardar el producto actualizado en su ruta original por idUnico
-    firebaseSet(firebaseRef(`productosPorLista/general/${productoId}`), producto)
-      .then(() => {
-        mostrarAviso("Código vinculado correctamente", "ok");
-        cerrarPopupAsociar();
-      })
-      .catch((err) => {
-        console.error("Error al vincular código:", err);
-        mostrarAviso("No se pudo vincular el código", "error");
-      });
-  }, { onlyOnce: true });
+    // Guardar el producto actualizado en el array sobrescribiendo su posición
+    firebaseGet(firebaseRef("productosPorLista/general")).then(snapshot => {
+      const data = snapshot.val() || [];
+      const index = data.findIndex(p => p && p.idUnico === producto.idUnico);
+      if (index !== -1) {
+        data[index] = producto;
+        firebaseSet(firebaseRef("productosPorLista/general"), data)
+          .then(() => {
+            mostrarAviso("Código vinculado correctamente", "ok");
+            cerrarPopupAsociar();
+          })
+          .catch((err) => {
+            console.error("Error al vincular código:", err);
+            mostrarAviso("No se pudo vincular el código", "error");
+          });
+      } else {
+        mostrarAviso("No se pudo encontrar el producto en base de datos", "error");
+      }
+    });
+  });
 }
 
 // Cerrar el popup de asociación
