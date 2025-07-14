@@ -512,6 +512,7 @@ function crearFilaProducto(p) {
     `<td>${formatearMoneda(valorCostoTotal)}</td>`,
     `<td>${formatearMoneda(gananciaTotal)}</td>`,
     `<td>${p.categoria || "-"}</td>`,
+    `<td>${p.descuentoPorcentaje ? `${p.descuentoPorcentaje}%` : '-'}</td>`,
     `<td>${fechaMod}</td>`,
     `<td><button type="button" onclick="abrirPopupEdicion('${p.idUnico}')">✏️</button><button type="button" onclick="eliminarProducto('${p.idUnico}')">🗑️</button></td>`
   ];
@@ -589,6 +590,10 @@ function crearTarjetaProducto(p) {
 }
 
 function guardarProducto() {
+  const precioCostoOriginal = parseFloat(document.getElementById("precioCosto").value) || 0;
+  const descuentoPorcentaje = parseFloat(document.getElementById("descuentoPorcentaje").value) || 0;
+  const precioCostoFinal = +(precioCostoOriginal * (1 - descuentoPorcentaje / 100)).toFixed(2);
+
   const producto = {
     codigoBarras: document.getElementById("codigoBarras").value.trim(),
     producto: document.getElementById("productoNombre").value.trim(),
@@ -596,7 +601,9 @@ function guardarProducto() {
     cantidadCajas: parseInt(document.getElementById("cajas").value) || 0,
     unidadesSueltas: parseInt(document.getElementById("unidadesSueltas").value) || 0,
     precioUnidad: parseFloat(document.getElementById("precioPorUnidad").value) || 0,
-    precioCosto: parseFloat(document.getElementById("precioCosto").value) || 0,
+    precioCosto: precioCostoFinal,
+    precioCostoOriginal,
+    descuentoPorcentaje,
     categoria: document.getElementById("categoriaProducto").value,
     idUnico: generarUUIDCompat(),
     ultimaModificacion: Date.now()
@@ -861,6 +868,10 @@ function guardarProductoDesdePopup() {
     return;
   }
 
+  const precioCostoOriginal = parseFloat(popupForm.elements["precioCosto"].value) || 0;
+  const descuentoPorcentaje = parseFloat(popupForm.elements["descuentoPorcentaje"]?.value) || 0;
+  const precioCostoFinal = +(precioCostoOriginal * (1 - descuentoPorcentaje / 100)).toFixed(2);
+
   const nuevoProducto = {
     codigoBarras,
     producto: productoNombre,
@@ -868,7 +879,9 @@ function guardarProductoDesdePopup() {
     cantidadCajas: parseInt(popupForm.elements["cajas"].value) || 0,
     unidadesSueltas: parseInt(popupForm.elements["unidadesSueltas"].value) || 0,
     precioUnidad: parseFloat(popupForm.elements["precioPorUnidad"].value) || 0,
-    precioCosto: parseFloat(popupForm.elements["precioCosto"].value) || 0,
+    precioCosto: precioCostoFinal,
+    precioCostoOriginal,
+    descuentoPorcentaje,
     categoria: popupForm.elements["categoriaProducto"].value,
     idUnico: productoEditando?.idUnico || generarUUIDCompat(),
     ultimaModificacion: Date.now()
@@ -1018,6 +1031,7 @@ function abrirPopupEdicion(idUnico) {
   popupForm.elements["precioPorUnidad"].value = producto.precioUnidad;
   popupForm.elements["precioCosto"].value = producto.precioCosto;
   popupForm.elements["categoriaProducto"].value = producto.categoria;
+  popupForm.elements["descuentoPorcentaje"].value = producto.descuentoPorcentaje || '';
 
   abrirPopupAgregar();
 }
