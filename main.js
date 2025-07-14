@@ -1,4 +1,13 @@
 // --- AUTOCOMPLETADO PERSONALIZADO UNIVERSAL ---
+
+// Función compatible para generar UUID (en vez de crypto.randomUUID)
+function generarUUIDCompat() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
 // Esta función configura autocompletado para un input dado, usando una lista de opciones y un callback de selección.
 function configurarAutocompletadoPersonalizado(input, getOpciones, onSeleccion) {
   if (!input) return;
@@ -570,7 +579,7 @@ function guardarProducto() {
     precioUnidad: parseFloat(document.getElementById("precioPorUnidad").value) || 0,
     precioCosto: parseFloat(document.getElementById("precioCosto").value) || 0,
     categoria: document.getElementById("categoriaProducto").value,
-    idUnico: crypto.randomUUID(),
+    idUnico: generarUUIDCompat(),
     ultimaModificacion: Date.now()
   };
 
@@ -842,7 +851,7 @@ function guardarProductoDesdePopup() {
     precioUnidad: parseFloat(popupForm.elements["precioPorUnidad"].value) || 0,
     precioCosto: parseFloat(popupForm.elements["precioCosto"].value) || 0,
     categoria: popupForm.elements["categoriaProducto"].value,
-    idUnico: productoEditando?.idUnico || crypto.randomUUID(),
+    idUnico: productoEditando?.idUnico || generarUUIDCompat(),
     ultimaModificacion: Date.now()
   };
 
