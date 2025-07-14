@@ -256,3 +256,49 @@ function cerrarPopupAsociar() {
 // Exponer función al global
 window.confirmarAsociacionCodigo = confirmarAsociacionCodigo;
 window.cerrarPopupAsociar = cerrarPopupAsociar;
+// --- Captura automática de lector de código de barras (input por teclado) ---
+let bufferCodigo = "";
+let temporizadorLectura = null;
+
+document.addEventListener("keydown", function (e) {
+  // Ignorar si está enfocado un input o textarea
+  if (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) {
+    return;
+  }
+
+  // Ignorar teclas especiales salvo Enter
+  if (e.key.length > 1 && e.key !== "Enter") return;
+
+  if (temporizadorLectura) {
+    clearTimeout(temporizadorLectura);
+  }
+
+  if (e.key === "Enter") {
+    if (bufferCodigo.length > 4) {
+      procesarCodigoDesdeTeclado(bufferCodigo.trim());
+    }
+    bufferCodigo = "";
+    return;
+  }
+
+  bufferCodigo += e.key;
+
+  temporizadorLectura = setTimeout(() => {
+    bufferCodigo = "";
+  }, 100);
+});
+
+function procesarCodigoDesdeTeclado(codigo) {
+  const productosRef = firebaseRef("productosPorLista/general");
+
+  productosRef.once("value", (snapshot) => {
+    const productos = snapshot.val() || {};
+    const encontrado = Object.values(productos).find(p => p.codigoBarras === codigo);
+
+    if (encontrado) {
+      mostrarProductoEscaneado(encontrado);
+    } else {
+      mostrarPopupAsociarCodigo(codigo);
+    }
+  });
+}
