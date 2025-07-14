@@ -226,6 +226,25 @@ document.addEventListener("DOMContentLoaded", () => {
     iniciarScanner();
   });
 
+  // Listener global para Enter en formularios, ignorando si hay autocompletado abierto
+  document.addEventListener("keydown", function (e) {
+    const form = document.getElementById("formProducto");
+    const popupForm = document.getElementById("formPopupProducto");
+    const elementoActivo = document.activeElement;
+    const estaEnFormulario = form?.contains(elementoActivo) || popupForm?.contains(elementoActivo);
+
+    const hayAutocompletadoAbierto = !!document.querySelector(".autocompletado-lista.sugerencias-autocomplete[style*='display: block']");
+
+    if (e.key === "Enter" && estaEnFormulario && !hayAutocompletadoAbierto) {
+      e.preventDefault();
+      if (popupForm?.contains(elementoActivo)) {
+        guardarProductoDesdePopup();
+      } else if (form?.contains(elementoActivo)) {
+        guardarProducto();
+      }
+    }
+  });
+
   // Botón escanear en popup agregar
   const btnEscanearPopup = document.getElementById("btnEscanearPopup");
   if (btnEscanearPopup) {
